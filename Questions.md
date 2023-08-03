@@ -1,0 +1,35 @@
+## 问题
+- 1： OPENGLES OPENGLE
+- 2:  DPI
+- 3: JsonUtility
+- 4：使用ExecuteCommandBuffer无法及时提交渲染参数？
+## 知识点
+- 1： 开启/关闭Vulkan
+adb shell setprop debug.vulkan.layers "asddf"
+adb shell setprop debug.vulkan.layers ""
+- 2: 在资源创造材质球来控制Shade_feature 变体的生成
+- 3: c# 脚本中调用 native的属性（如Object.name等）会有GC产生，多次调用需缓存。因为c++ allocate 的内存不与c#侧共用
+- 4：classes that need to be destroied, Texture2D, Sprite, Material, and PlayableGraph, 
+- 5: Properties of animators and material should be assign with ID instead of string since if you use string to specify it, native side will convert the string to an unique ID.    
+    try to use a clss to cache all identifications.
+- 6: access properties of .material will cause a new instance of material.
+- 7: specify inline for methods called every frame (such as animation...)
+- 8: Quality setting 等的参数设置在UI中不一定存在，需要到文本中编辑。
+- 9：Load RT在有些机型上不太ok。
+- 10: mesh材质虽然可以在导入时对不必要的属性进行剔除，但对于多材质，多subMesh的Mesh。即便其中一些submesh的数据结构较为简练（如只有uv1， uv2），在渲染时仍会所以submesh的最小并集进行传递。如submesh1有uv1，vertexcolor，submesh2有uv1，uv2，那么所有的submesh都会以（uv1，uv2，vertexcolor）进行传递，因此最好将不同数据格式的submesh分在不同的mesh中使用。
+- mesh.uv -> UV0 -> TEXCOORD0. mesh.uv2 -> UV1 -> TEXCOORD1. mesh.uv2 -> UV3 -> TEXCOORD2 ...
+- UIText组件的outline顶点数较多，可以考虑使用Text Mesh Pro进行优化
+- 深度类型的纹理在移动端不可以使用 TEXTURE2D 或 TEXTURE2D_X 进行定义，可能因为类型不符造成crash。 在定义时需要改成TEXTURE2D_FLOAT, 或者sampler2D_float. Sample 时使用 SAMPLE_TEXTURE2D.
+- 关闭阴影时需要仍需传入一张无用的Shadowmap，以防部分Mali机型仍然访问shadowmap访问到unity传入的Texture3D的默认纹理，发生纹理类型错误，从而发生Crash
+- 查看vulkan报错的方式：1. 下载validation layer库，https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/tag/sdk-1.3.250.1
+2. 解压后，对应64位或者32位库放在对应位置：
+root手机：直接放在/data/local/debug/vulkan
+非root：需要打在apk中，自己编译的引擎放在build\AndroidPlayer\Variations\il2cpp\Development\Libs\arm64-v8a或32位文件夹；
+3. 开启validation layer：
+adb shell
+setprop debug.vulkan.layers VK_LAYER_KHRONOS_validation
+setprop debug.vulkan.enable_callback 1
+
+4. logcat -s vulkan
+5. 运行游戏
+6. 看到Loaded layer VK_LAYER_KHRONOS_validation和Installed debug report callback表示开启成功
