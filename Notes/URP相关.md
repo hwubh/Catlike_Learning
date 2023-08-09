@@ -1,0 +1,1 @@
+- 1: ClearRenderTarget => depth / stencil, meaning the default value of depth/stencil textures after being clearing. 

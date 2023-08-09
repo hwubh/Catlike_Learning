@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class CameraRenderer
+public partial class CameraRenderer
 {
     //存放当前渲染上下文
     private ScriptableRenderContext context;
@@ -13,15 +13,26 @@ public class CameraRenderer
 
     CullingResults cullingResults;
 
-    CommandBuffer cmd = new CommandBuffer {name = bufferName};
+    CommandBuffer cmd = new CommandBuffer { name = bufferName };
 
     static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
+
+#if UNITY_EDITOR
+#else
+	const string SampleName = bufferName;
+#endif
 
     //摄像机渲染器的渲染函数，在当前渲染上下文的基础上渲染当前摄像机
     public void Render(ScriptableRenderContext context, Camera camera)
     {
         this.context = context;
         this.camera = camera;
+
+#if UNITY_EDITOR
+        PrepareBuffer(cmd);
+        PrepareForSceneWindow();
+        DrawGizmos();
+#endif
 
         if (!Cull())
         {
@@ -30,9 +41,10 @@ public class CameraRenderer
 
         SetUp();
         DrawVisibleGeometry();
+        DrawUnsupportedShaders();
         Submit();
     }
-    
+
     bool Cull()
     {
         //获取摄像机用于剔除的参数
@@ -53,22 +65,30 @@ public class CameraRenderer
             criteria = SortingCriteria.CommonOpaque
         };
         var drawingSetting = new DrawingSettings(unlitShaderTagId, sortingSettings);
-        var filteringSetting = new FilteringSettings(RenderQueueRange.all, -1, uint.MaxValue);
+        var filteringSetting = new FilteringSettings(RenderQueueRange.opaque, -1, uint.MaxValue);
         context.DrawRenderers(cullingResults, ref drawingSetting, ref filteringSetting);
+
         context.DrawSkybox(camera);
+
+        sortingSettings.criteria = SortingCriteria.CommonTransparent;
+        drawingSetting.sortingSettings = sortingSettings;
+        filteringSetting.renderQueueRange = RenderQueueRange.transparent;
+        context.DrawRenderers(cullingResults, ref drawingSetting, ref filteringSetting);
     }
 
     void SetUp()
     {
-        cmd.BeginSample(bufferName); 
         context.SetupCameraProperties(camera);
-        cmd.ClearRenderTarget(RTClearFlags.All, Color.clear, 1.0f, 0);
+        CameraClearFlags flags = camera.clearFlags;
+        //cmd.ClearRenderTarget(RTClearFlags.All, Color.clear, 1.0f, 0);
+        cmd.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
+        cmd.BeginSample(SampleName);
         ExecuteBuffer();
     }
 
     public void Submit()
     {
-        cmd.EndSample(bufferName);
+        cmd.EndSample(SampleName);
         ExecuteBuffer();
         context.Submit();
     }
