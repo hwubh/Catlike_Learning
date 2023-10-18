@@ -37,8 +37,27 @@
          *Pose* (of a Joint) is defined as the joint's position, orientation and scale, represeted as a 4\*4 or 4\*3 matrix or SRT( scale, quaternion rotation and vector translation)
   - *Bind Pose*: aka *reference pose* or *rest pose* or *T-Pose*. The pose the mesh would be rendered if it's not a skinned mesh(No skeleton).
                  ![20231011212452](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231011212452.png)
-  - Local Poses: def: Parent-relative pose, usually stored in SRT format. (child joint moves when its parent moves). 
+  - Local Poses: 
+    - def: Parent-relative pose, usually stored in SRT format. (child joint moves when its parent moves). 
                       Mathematically, Joint pose can be represented as an affine transform.
                       (P stands for affine, T: 3\*1 Vector translation, S: 3\*3 diagonal scale matrix, R 3\*3 rotation matrix. j ranges from 0 to N-1) ()
                       ![20231012113258](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231012113258.png)
-    - f    
+    - Joint Scale: *Case1:* **Uniform** scale value -> benefit from the the mathematics of frustum and collision as the bounding sphere of a    joint never perform as ellipsoid, and also save memory.
+                   *Case2:* **Nonuniform** scale value -> represented as a Vector3, allowing 3-dimension transformation.
+    - Representation in Memeory: Stored in SRT format.
+    ![20231018204130](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231018204130.png)
+    <center>(Structure of Joint Pose with Uniform scale )</center>
+    ![20231018204635](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231018204635.png)
+    <center>(Structure of Joint Pose with Nonuniform scale )</center>
+    ![20231018205000](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231018205000.png)
+    <center>(Structure of local poses of a skeleton)</center>
+    - Usage: Joint Pose used as a change of basis (Transfrom)
+      The *Joint Pose Transform of a joint(**j**)* **P<sub> j -> p(j)</sub>** takes Points/Vectors in Child Space to its *Parent Joint(**p(j)**)* Space, and vice versa.
+    
+  - Global Poses: 
+    - def: Joint's pose in *model space* or *world space*
+    - Representation: model-space pose of a joint(j -> M) = muliplying all local poses from leaf to root.
+      ![20231018211324](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231018211324.png)
+      <center>(Model Pose of joint <em>5</em> )</center>
+      ![20231018211540](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231018211540.png)
+      <center>(General format: <strong>Global Pose</strong> (<em>joint-to-model transform</em>) of any joint <em>j</em>, <em>p(0) = <strong>M</strong></em>)</center>
