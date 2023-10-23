@@ -56,8 +56,36 @@
     
   - Global Poses: 
     - def: Joint's pose in *model space* or *world space*
-    - Representation: model-space pose of a joint(j -> M) = muliplying all local poses from leaf to root.
+    - Formula: model-space pose of a joint(j -> M) = muliplying all local poses from leaf to root.
       ![20231018211324](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231018211324.png)
       <center>(Model Pose of joint <em>5</em> )</center>
       ![20231018211540](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231018211540.png)
       <center>(General format: <strong>Global Pose</strong> (<em>joint-to-model transform</em>) of any joint <em>j</em>, <em>p(0) = <strong>M</strong></em>)</center>
+      ![20231019115748](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231019115748.png)
+    - Representation: use 4*4 matrix to store.
+      ![20231019141946](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231019141946.png)
+  
+  ### Third: Clips
+  - def: aminations of fine-grained motions, usually short and discontiguous, aka *animation clips* or *animations*. Ther movement of a character may be broken into  thousands of clips, which may only affect part of body or be looped.
+  - The Local Timeline: *time index* (t), range from 0 to T(duration of the clip). Unlike film, t in game anition is a **float** and **continuous**
+    [20231023114653](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231023114653.png)
+    - Pose Interpolation and Continuous Time: Clips only store important pose called *key poses*/ *key frames* at specific times, and the computer calculates poses in between via linear or curve-based interpolation.
+    ![20231023115808](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231023115808.png)
+    Because frame rate of the game is not a constant( usually dependents on CPU or GPU), and game animations are sometimes *time-scaled*.
+    Therefore, **time(t)** in clips is both **continuous** and **scalable**
+    - Time Units: time is best measured in units of seconds, but also can be measured in units of frames if duration of a frame is decided. 
+    t also should be a float or a integer measures very samll subframe time intervals, as there is sufficint resolution in time measurements for tweenting between frames or scaling animation's playback speed.
+    - Frame vs Sample: In industry, *frame* may refer to a *period of time* like 1/30, also could be a *single point in time*(e.g., "at frame 42")
+      To clarify, *Sample* is used to stand for a *single point in time*.
+                  *Frame* is used to stand for a *period of time*
+      ![20231023215726](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231023215726.png)
+      <center>(animtion created with 30 frames per second consists 31 <em>samples</em> and 30 <em>frames</em> in one second)</center>
+    - Frame, Sample and Looping Clips: for *looped*(play repeatedly) animations, the last sample of it should equals to the first sample.  
+        Therefore, the last sample of looped animation is redundant and is ommitted for many game engines.
+        Overall, if a clip is non-looping, a N-frame clip has N+1 unique samples and N frames.
+                 if a clip is looping, then the last sample is redundant, so an N-frame clip has N unique samples and N frames.
+    ![20231023220714](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231023220714.png)
+          <center>(Last sample of first clip = the first sample of second clip)</center>
+    - Normalized Time(Phase): def: normalized the duration of a clip into 1, called *normalized time* or *phase of the clip*.
+      use "nomralized time unit" (*u*, range 0~1) as time unit.
+      Normalized time is useful when synchronizing multiple clips that may differ in duration. For example, 
