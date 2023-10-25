@@ -88,4 +88,23 @@
           <center>(Last sample of first clip = the first sample of second clip)</center>
     - Normalized Time(Phase): def: normalized the duration of a clip into 1, called *normalized time* or *phase of the clip*.
       use "nomralized time unit" (*u*, range 0~1) as time unit.
-      Normalized time is useful when synchronizing multiple clips that may differ in duration. For example, 
+      Normalized time is useful when synchronizing multiple clips that may differ in duration. 
+      TODO: A EXAMPLE
+
+  - The Global Timeline:
+    - def: The timeline of a character starts when the character first created, whose time index is noted by $\tau$.
+      ![20231024173210](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231024173210.png)
+    - Time-scaling: aka *playback rate*, denoted by *R*. Used to modify the local timelime of clips when they are mapped onto global timeline.
+      ![20231025213317](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231025213317.png)
+      <center>(<em>R</em> = 2 makes 5-second(s) clips occupy 2.5s long in global timeline)</center>
+    - formula: mapping clips to global timeline. 
+      - Global start time $\tau$<sub>start</sub>. 
+      - Playback Rate *R*
+      - Duration *T*
+      - num of times it loops, *N*
+      - Local time index *t*
+        ![20231025214043](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231025214043.png)
+  - Comparison of Local and Global Clocks: 
+    - Local Clock: Each clip has its own local clock, playback rate *R* and time index *t*. Pros: Simple
+    - Glabol Clock: The character has a global clock, usually measured in seconds. Each clip records the global time it started playing, $\tau$<sub>start</sub>. Pros: Synchronizing animations, multiple characters interactive.
+  - 
