@@ -107,4 +107,18 @@
   - Comparison of Local and Global Clocks: 
     - Local Clock: Each clip has its own local clock, playback rate *R* and time index *t*. Pros: Simple
     - Glabol Clock: The character has a global clock, usually measured in seconds. Each clip records the global time it started playing, $\tau$<sub>start</sub>. Pros: Synchronizing animations, multiple characters interactive.
-  - 
+
+    - Synchronizing Animations with a Local Clock
+    if clips played in disparete engine subsystems, there will be a delay between clips of events and result of them.
+    ![20231027174211](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231027174211.png)
+    <center>(The animation of event and result displays in different frames)</center>
+    - Synchronizing Animations with a Global Clock
+    A global clock approach helps to alleviate many of these synchronization problems, because the origin of the timeline ($\tau$ = 0) is common across all clips by definition.
+     ![20231027175245](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231027175245.png)
+  - A Simple Animation Data Format: 
+    ![20231027175634](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231027175634.png)
+    In C++: ![20231027175846](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231027175846.png) 
+    For an AnimationClip, it at least contains a reference to its skeleton and an array of AnimationSamples of which the num is (m_frameCount + 1) if unloop or  m_frameCount if loop. Inside the array, each AnimationSample holds an array of JointPoses, SRT matrices.
+  - Continuous Channel Functions:
+    The samples of a clips are definitions of continuous fumctions over time.
+
