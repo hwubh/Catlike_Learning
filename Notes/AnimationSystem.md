@@ -120,5 +120,13 @@
     In C++: ![20231027175846](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231027175846.png) 
     For an AnimationClip, it at least contains a reference to its skeleton and an array of AnimationSamples of which the num is (m_frameCount + 1) if unloop or  m_frameCount if loop. Inside the array, each AnimationSample holds an array of JointPoses, SRT matrices.
   - Continuous Channel Functions:
-    The samples of a clips are definitions of continuous fumctions over time.
-
+    The samples of a clips are definitions of continuous fumctions over time. Theoretically, these channel fucntions are *smooth* and *continuous* during local timeline. But in pratice, mnay game engines interpolate *linearly* between samples by using *piecewise linear approaximations*. 
+    ![20231030211343](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231030211343.png)
+  - Metachannels: 
+      def: channels encode some game-specific information that not directly poses the skeletons but need to be synchronized with the animation.
+      Types: 
+      - *event triggers*: for channels that contains *event triggers* at time indices. When local time index pass one of these triggers, a corresponding *event* is sent to the game engine. For example, play a footstep sound a "dust" particle effect when the feet touch the ground.
+      ![20231030213653](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231030213653.png)
+      <center>(The "<em>Other</em>" channel contains some <em>event triggers</em> in the clip ensure the synchronization of events and animations)</center>
+      - Special joints: aka *locators* in Maya. These joints used to encode the position and orientation of virtually any object in the game. For example, tansforms, field of view and other atrributes of camera can be changed by its locators when playing.
+      - Ohters: Texture coordinate scrolling, texture animation, parameters of material, lighting and other kinds of objects.
