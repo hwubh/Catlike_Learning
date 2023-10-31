@@ -130,3 +130,15 @@
       <center>(The "<em>Other</em>" channel contains some <em>event triggers</em> in the clip ensure the synchronization of events and animations)</center>
       - Special joints: aka *locators* in Maya. These joints used to encode the position and orientation of virtually any object in the game. For example, tansforms, field of view and other atrributes of camera can be changed by its locators when playing.
       - Ohters: Texture coordinate scrolling, texture animation, parameters of material, lighting and other kinds of objects.
+
+  - Relationship between Meshes, Skeletons and Clips
+    - UML Diagram:
+    ![20231031210732](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231031210732.png)
+    The above UML diagram reflects the relations between classes via *cardinality* and *direction*. As to this pic., the *cardinality* as 1 represents a single instance of the class, while the asterisk indicates many instance.
+    *Examples: in this diagram, we say AnimationClip has directed association pointing to Skeleton, meaning that each clips has a reference to a skeleton, while a skeleton can be referenced by several AnimationClips, but for both of them, they can be alive without each other. While the skeleton has a directed composition pointing to SkeletonJoint, meaning that each skeleton has several SkeletonJoints, and each skeletonJoint should be alive under one specific skeletons. Both of them cannot be alive without each other.*
+    - Animation Retargeting:
+      Usually, an animation is only compatible with a kind of skeleton. However *animation retargeting* allows us to make animation target to other skeletons.
+      - Remapping Joint index: if two skeletons are morphologicall identical, just remapping joint indices works.
+      - **Retarget pose**: At Naughty Dog, the animator define a special pose as the *retarget pose*. This pose captures differences between the bind poses of the source and target skeleton, and adjust source poses to make them work more naturrally in target skeleton. (TODO)
+      -  “Feature Points Based Facial Animation Retargeting” by Ludovic Dutreve et al(TODO)
+      -  “Real-time Motion Retargeting to Highly Varied User-Created Morphologies” by Chris Hecker et al. (TODO)
