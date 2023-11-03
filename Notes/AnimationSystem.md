@@ -142,3 +142,47 @@
       - **Retarget pose**: At Naughty Dog, the animator define a special pose as the *retarget pose*. This pose captures differences between the bind poses of the source and target skeleton, and adjust source poses to make them work more naturrally in target skeleton. (TODO)
       -  “Feature Points Based Facial Animation Retargeting” by Ludovic Dutreve et al(TODO)
       -  “Real-time Motion Retargeting to Highly Varied User-Created Morphologies” by Chris Hecker et al. (TODO)
+  ### Fourth: Skinning nad Matrix Palette Generation
+  - Skinning: The process of attaching the vertices of a 3D mesh to a posed skeleton.
+  
+  - Per-Vertex Skinning Information
+    - Skinned mesh: a mesh attached to skeleton by means of its vertices, whoese vertices are bound to one or more joints and track the joints to a *weighted avergae* position. 
+      And for every vertex of skinned mesh, it has following additional information
+      - 1: the index or indices of the joint(s) to which it is bound,
+      - 2: for each joint, a *weighting factor* decide the influence that joint have on the final vertex position. 
+        (for each vertex, joint weights of it sum to **one**)
+      ![20231102164251](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231102164251.png)
+        <center>(Structure of a SkinnedVertex, since joints weights sum to one, last weight omitted)</center>
+    - The Mathematics of Skinning 
+      - **Skinning Matirx**: a matrix transforms the vertices from bind pose to current pose (in model space). not a change of basis transfrom.
+      - One-Jointed Skeleton
+        Denotion: 
+          - 1: The Model Space(*M*)
+          - 2: The Joint(Local) Space (*J*)
+          - 3: The Joint's coordinate axes in bind pose (*B*)
+          - 4: The Joint's coordinat axes in cureent pose (*C*)
+          - 5: The position of vertices in bind pose in model space (**v**<sup>B</sup><sub>M</sub>)
+          - 6: The position of vertices in current pose in model space (**v**<sup>C</sup><sub>M</sub>)
+          - 7: The position of vertices in joint(local) spcae (**v**<sub>J</sub>)
+          - 8: The matrix transform from Model space to Joint space axes in bind Pose(B<sub>J->M</sub>)
+          - 9: The matrix transform from Model space to Joint space axes in current Pose(C<sub>J->M</sub>)
+          - 10: The skinning matrix of vertices (K<sub>J</sub>)
+        Formula: As **v**<sub>J</sub> is constant, then
+          - 1: **v**<sub>J</sub> = **v**<sup>B</sup><sub>M</sub> * B<sub>M->J</sub> = **v**<sup>C</sup><sub>M</sub> * C<sub>M->J</sub>
+          - 2: **v**<sup>C</sup><sub>M</sub> = **v**<sub>J</sub> * C<sub>J->M</sub>
+                                             = **v**<sup>B</sup><sub>M</sub> * B<sub>M->J</sub> * C<sub>J->M</sub>
+                                             = **v**<sup>B</sup><sub>M</sub> * (B<sub>J->M</sub>)<sup>-1</sup> * C<sub>J->M</sub>
+                                             =  **v**<sup>B</sup><sub>M</sub> * K<sub>J</sub>
+          - 3: K<sub>J</sub> = (B<sub>J->M</sub>)<sup>-1</sup> * C<sub>J->M</sub>
+      - Multijointed Skeletons:
+        **Matrix Pallette**: an array of skinning matrices K<sub>j</sub>, one for each joint *j*. Used as a look-up table for rendering engine.
+        In practice, Animation engines will cache (B<sub>J->M</sub>)<sup>-1</sup>, as it is a constant, and calculate local poses C<sub>J->p(J)</sub> and global poses C<sub>J->M</sub>. And then it can achieve the skinning matrix K<sub>J</sub>.
+      - Incorporating the Model-to-World Transform
+         Sometimes some engines will premultiply the pallette of skinning matrices by the object's model-to-world transform to save one matrix multiply afterwards.
+         However, if we are going to use *animation instancing*, a technique used to apply an animation to multiple characters in the same time, it is better to keep the model-to-world matrix from matrix palette.
+      - Skinning a Vertex to Multiple joints 
+        If a vertex is skinning to more than one joint, the final position of it is a weighted average of the resulting positions assuming it is skinned to each joint individually. It obeys two formulas.
+        - First, the sum of weighted averages of N quantities is **One**
+          ![20231103200109](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231103200109.png)
+        - Second, for a vertex skinned to N joints with indices j<sub>0</sub> through j<sub>N-1</sub>> and weight $\omega$<sub>0</sub> through $\omega$<sub>N-1</sub>. We have K<sub>j<sub>i</sub></sub> as the skinning matrix for the joint j<sub>j</sub>.
+          ![20231103201101](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231103201101.png) 
