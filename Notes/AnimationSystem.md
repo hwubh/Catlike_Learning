@@ -207,4 +207,11 @@
       For example, there is a clip contains evenly spaced pose samples at times 0, $\delta t$, $2\delta t$, $3\delta t$. To find a pose at time t = $2.18\delta t$, the blending percentage $\beta$ = 0.18, determined by ![20231107171907](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231107171907.png)
       Then we get the result: ![20231107171932](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231107171932.png)
     - Motion Continuity: Cross-Fading
-       To ensure the character's body move smoothly, the 
+       - To ensure the character's body move smoothly, the continuity should be followed.
+         - C0 continuity: the paths are continuous (the position of joints are continuous)
+         - C1 continuity: the first derivatives (velocity) of pahts should be continuous. 
+         - C2 continuity: the second derivatives of the motion paths (acceleration curves) should be continuous. 
+       - Pros: LERP-based animation blending can achieve a reasonably pleasing form of C0 motion continuity, also be approximating C1 continuity.
+       - Cons: introduce some unwanted artifacts, such as the dreaded "sliding feet".
+    - **Cross-fading**:  When LERP is used in the transitions between clips, it also is called **Cross-fading**. 
+      - How: when corss-fade between two animations, we will overlap the timelines of the two clips by some reasonable amount, and the blend clips. Then blend percentage $\beta$ starts at zero at t<sub>start</sub>(start time of cross-fade).  $\beta$ is increased until the time reach the t<sub>end</sub>(end time of cross-fade). The time interval over which the cross-fade occurs is called *blend time* ($\deltat$ <sub>blend</sub> = t<sub>start</sub> - t<sub>end</sub>).
