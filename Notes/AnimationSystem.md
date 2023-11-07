@@ -188,20 +188,23 @@
           ![20231103201101](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231103201101.png) 
   
   ### Animation Blending
-    <!-- - Def: A technique blending combines two or more *input poses* to produce an *output pose* for the skeleton.
-    - Usage: 
-      - First: combines two or more animations into a host of new animations without creating them manually.
-      - Second: find intermediate pose between two known poses at different points in time, usually used in poses that does not correspond exactly to one of the sampled frames available in the animation data.
-    - LERP Blending
-      - Def: *linear interpolation*.
-      - Formula: $\beta$ called *blend percentage* or *blend factor*, range from 0 to 1.
-        ![20231107164631](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231107164631.png) 
-        As we are linearly interpolating *joint poses*, the *4\*4 transformation matricses*, which is not pracitcal to interpolate matrices, we do interpolation on each component of the SRT individually.
-        - Translation:  LERP: ![20231107165152](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231107165152.png)
-        - Quaternion: LERP or SLERP: ![20231107165257](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231107165257.png)
-        - Scale: LERP: ![20231107165347](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231107165347.png)
-        
-        To ensure the result of blending looks biomechanically implausible, we do the linear interpolation on local poses, which means the interpolation can be performed entirely in parallel as these joint's poses are totally indepedent. 
-    - Application of LERT Blending
-      - Temporal Interpolation:  Because of the variable frame rate, player might see frames 0.9, 1.85, 2.18 that are between the sampled poses.
-        For example, there is a clip contains evenly spaced pose samples at times 0,  -->
+  - Def: A technique blending combines two or more *input poses* to produce an *output pose* for the skeleton.
+  - Usage: 
+    - First: combines two or more animations into a host of new animations without creating them manually.
+    - Second: find intermediate pose between two known poses at different points in time, usually used in poses that does not correspond exactly to one of the sampled frames available in the animation data.
+  - LERP Blending
+    - Def: *linear interpolation*.
+    - Formula: $\beta$ called *blend percentage* or *blend factor*, range from 0 to 1.
+      ![20231107164631](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231107164631.png) 
+      As we are linearly interpolating *joint poses*, the *4\*4 transformation matricses*, which is not pracitcal to interpolate matrices, we do interpolation on each component of the SRT individually.
+      - Translation:  LERP: ![20231107165152](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231107165152.png)
+      - Quaternion: LERP or SLERP: ![20231107165257](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231107165257.png)
+      - Scale: LERP: ![20231107165347](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231107165347.png)
+      
+      To ensure the result of blending looks biomechanically implausible, we do the linear interpolation on local poses, which means the interpolation can be performed entirely in parallel as these joint's poses are totally indepedent. 
+  - Application of LERT Blending
+    - Temporal Interpolation:  Because of the variable frame rate, player might see frames 0.9, 1.85, 2.18 that are between the sampled poses.
+      For example, there is a clip contains evenly spaced pose samples at times 0, $\delta t$, $2\delta t$, $3\delta t$. To find a pose at time t = $2.18\delta t$, the blending percentage $\beta$ = 0.18, determined by ![20231107171907](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231107171907.png)
+      Then we get the result: ![20231107171932](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231107171932.png)
+    - Motion Continuity: Cross-Fading
+       To ensure the character's body move smoothly, the 
