@@ -215,3 +215,30 @@
        - Cons: introduce some unwanted artifacts, such as the dreaded "sliding feet".
     - **Cross-fading**:  When LERP is used in the transitions between clips, it also is called **Cross-fading**. 
       - How: when corss-fade between two animations, we will overlap the timelines of the two clips by some reasonable amount, and the blend clips. Then blend percentage $\beta$ starts at zero at t<sub>start</sub>(start time of cross-fade).  $\beta$ is increased until the time reach the t<sub>end</sub>(end time of cross-fade). The time interval over which the cross-fade occurs is called *blend time* ($\deltat$ <sub>blend</sub> = t<sub>start</sub> - t<sub>end</sub>).
+      - Types: 
+        - Smooth transition: Clip A and B both play simultaneously as $\beta$ increases from zero to one. (clips must be looping animations, timelines must be synchronized. WHY?)
+        ![20231108143541](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231108143541.png) 
+        - Frozen transition: The local clock of clip A (fore one) is stopped at the monment clip B starts playing. (For clips that are unrelated and cannot be time-synchronized)
+        ![20231108143553](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231108143553.png) 
+      - **ease-in/ease-out curve**: the blend factor $\beta$ can be varied following a cubic function of time, such as a one-dimensional Bezier. Such curve is called *ease-out curve* when blending out and *ease-in* when blending in.
+      ![20231108145119](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231108145119.png)
+      - formula:  $\beta$<sub>start</sub>: the blend factor at the start of the blend interval t<sub>start</sub>.
+                  $\beta$<sub>end</sub>: the blend factor at the end of the blend interval t<sub>start</sub>.
+                  $\mu$: the *normalized time* between t<sub>start</sub> and t<sub>end</sub>.
+                  $\nu$: the *inverse* normalized time, 1 - $\mu$.
+                  The Bezier tangents T<sub>start</sub> and T<sub>end</sub> are taken to equal.
+                  ![20231108150113](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231108150113.png)
+      - Core Poses: As C0 continuity can be achieved without blending  if the last pose pose in former clip matches the first pose in later clip. In practice, the animators often decide a set of *core poses*, each of which plays the first and last pose in a kind of clips to ensure C0 continuity. AND To achieved C1 or higher-order motion continuity, the smooth transition between clips by means of authoring a single smooth animation and then breaking it into two or more clips. (How?)
+    - Directional Locomotion: 
+      - Pivotal Movement: 
+        - Def: Character turn his entire body to change direction and faces in the direction he is moving and pivots about his vertical axis when he turns.
+        - How: Play the forward locomotion loop while rotating the entire character about its vertical axis to make it turn. To make it natural when characters is turning, we avoid the character always keep bolt upright and blend three variations on the basic forward walk or run, straight, extrme lelf and extreme right via LERP-blend to ahcieve desired lean angle.
+      - Targeted Movement: 
+        - Def: Character can keep his face in one direction while walking in any direction.( known as *strafing*)
+        - How: the animator authoers three separate looping animation clips- one moving forward, one to left, and one to right, which are called *directional locomotion clips*. With fixing the character direction at 0 degrees, the desired movement direction is decided by the blending of two adjacent movement animations via LERP-based blending. The blend percentage $\beta$ is determined by how close the angle of movement is to the angles of adjacent clips.
+        ![20231108162549](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231108162549.png)
+        - Cons: The reason that we use semicircle instead of a full circular blend including the backward movement is directly blending the backward movement and left/right movement causes awkward and unnatural movement. There are one possible way to solve:
+          - define two hemispherical blends, one for forward motion, and one for the backward, each with strafe animations that have ben crafted to work properly when blended with the corresponding straight run. When passing from one hemisphere to the other, the explicit transition animation is play to make the cahracter adjust its gait and leg crossing appropriately.
+    - Complex LERP Blends:
+    
+          
