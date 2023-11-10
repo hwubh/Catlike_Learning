@@ -1,0 +1,306 @@
+using System;
+
+namespace UnityEngine.Rendering.Universal
+{
+    public static class CachedShadowmapUtils
+    {
+        private static Vector4[] AABBBoxPoints = new Vector4[8] { Vector4.one, Vector4.one, Vector4.one, Vector4.one, Vector4.one, Vector4.one, Vector4.one, Vector4.one };
+        private static Vector4 shadowMapBound = Vector4.one;
+        private static Matrix4x4 textureScaleAndBias = Matrix4x4.identity;
+        private static Matrix4x4 rotationMatrix = Matrix4x4.identity;// rotation By Frustum Centroid
+        private static Matrix4x4 translationMtrix = Matrix4x4.identity; //translation To Frustum Centroid
+        private static Vector4[] viewFrustumBound = new Vector4[8] { Vector4.one, Vector4.one, Vector4.one, Vector4.one, Vector4.one, Vector4.one, Vector4.one, Vector4.one };
+        public static bool CalculateShadowArea(bool isMainCamera, Camera realCamera, ref Bounds bounds, ref Matrix4x4 shadowTransform, 
+            ref Matrix4x4 TextureToTextureMatrix, ref Matrix4x4 WorldToShadowMatrix, float heightOffset, float widthAdjustment, float heightAdjustment, float OriginWidthAdjustment, float OriginHeightAdjustment)
+        {
+            {
+                if (!isMainCamera)
+                    CalculateShadowArea(realCamera, ref bounds, ref shadowTransform, widthAdjustment, heightAdjustment, OriginWidthAdjustment, OriginHeightAdjustment);
+                else
+                    CalculateBigWorldShadowArea(realCamera, ref bounds, ref shadowTransform, heightOffset, widthAdjustment, heightAdjustment, OriginWidthAdjustment, OriginHeightAdjustment);
+
+                //if overlay area approach to 0 -> few things caster shadow -> not draw shadow
+                var rectangleArea = shadowMapBound.w * shadowMapBound.z;
+                if (shadowMapBound.w < 0 || shadowMapBound.z < 0 || Mathf.Approximately(rectangleArea, 0f))
+                    return false;
+
+                {
+                    //matrix that transfer objects from urp default size shadow map (e.g. 2048* 2048) to customized size
+                    TextureToTextureMatrix.m00 = 1 / shadowMapBound.z;
+                    TextureToTextureMatrix.m03 = -shadowMapBound.x / shadowMapBound.z;
+                    TextureToTextureMatrix.m11 = 1 / shadowMapBound.w;
+                    TextureToTextureMatrix.m13 = -shadowMapBound.y / shadowMapBound.w;
+                    //view matrix
+                    WorldToShadowMatrix = TextureToTextureMatrix * translationMtrix.inverse * rotationMatrix * translationMtrix * WorldToShadowMatrix;
+                    //projection matrix
+                    textureScaleAndBias.m00 = 0.5f;
+                    textureScaleAndBias.m11 = 0.5f;
+                    textureScaleAndBias.m22 = 0.5f;
+                    textureScaleAndBias.m03 = 0.5f;
+                    textureScaleAndBias.m23 = 0.5f;
+                    textureScaleAndBias.m13 = 0.5f;
+                    TextureToTextureMatrix = textureScaleAndBias.inverse * TextureToTextureMatrix * translationMtrix.inverse * rotationMatrix * translationMtrix * textureScaleAndBias;//textureScaleAndBias.inverse * matrix * textureScaleAndBias;//textureScaleAndBias.inverse *  TextureToTextureMatrix * matrix * textureScaleAndBias;
+                }
+
+                return true;
+            }
+        }
+
+        public static void CalculateShadowArea(Camera realCamera, ref Bounds bounds, ref Matrix4x4 shadowTransform, float widthAdjustment, float heightAdjustment, float OriginWidthAdjustment, float OriginHeightAdjustment)
+        {
+            //Get intersection points of the frustum of the main camera and the terrain.
+            GetViewBounds(realCamera);
+            //Get position of the cullingResults AABB box in world coordinate.
+            {
+                AABBBoxPoints[0].x = bounds.center.x + bounds.extents.x;
+                AABBBoxPoints[0].y = bounds.center.y - bounds.extents.y;
+                AABBBoxPoints[0].z = bounds.center.z + bounds.extents.z;
+
+                AABBBoxPoints[1].x = bounds.center.x + bounds.extents.x;
+                AABBBoxPoints[1].y = bounds.center.y + bounds.extents.y;
+                AABBBoxPoints[1].z = bounds.center.z - bounds.extents.z;
+
+                AABBBoxPoints[2].x = bounds.center.x - bounds.extents.x;
+                AABBBoxPoints[2].y = bounds.center.y + bounds.extents.y;
+                AABBBoxPoints[2].z = bounds.center.z + bounds.extents.z;
+
+                AABBBoxPoints[3].x = bounds.center.x - bounds.extents.x;
+                AABBBoxPoints[3].y = bounds.center.y + bounds.extents.y;
+                AABBBoxPoints[3].z = bounds.center.z - bounds.extents.z;
+
+                AABBBoxPoints[4].x = bounds.center.x + bounds.extents.x;
+                AABBBoxPoints[4].y = bounds.center.y + bounds.extents.y;
+                AABBBoxPoints[4].z = bounds.center.z + bounds.extents.z;
+
+                AABBBoxPoints[5].x = bounds.center.x + bounds.extents.x;
+                AABBBoxPoints[5].y = bounds.center.y - bounds.extents.y;
+                AABBBoxPoints[5].z = bounds.center.z - bounds.extents.z;
+
+                AABBBoxPoints[6].x = bounds.center.x - bounds.extents.x;
+                AABBBoxPoints[6].y = bounds.center.y - bounds.extents.y;
+                AABBBoxPoints[6].z = bounds.center.z + bounds.extents.z;
+
+                AABBBoxPoints[7].x = bounds.center.x - bounds.extents.x;
+                AABBBoxPoints[7].y = bounds.center.y - bounds.extents.y;
+                AABBBoxPoints[7].z = bounds.center.z - bounds.extents.z;
+            }
+
+
+
+            for (int i = 0; i < 8; i++)
+            {
+                //Transfer to those in light source coordinate.
+                AABBBoxPoints[i] = shadowTransform * AABBBoxPoints[i];
+                viewFrustumBound[i] = shadowTransform * viewFrustumBound[i];
+            }
+
+            {
+                var AABB = maxBound(AABBBoxPoints, 8);
+                var VIEW = maxBound(viewFrustumBound, 8);
+                //lenght and width of shadow map
+                shadowMapBound.z = (AABB.x - AABB.z) + (VIEW.x - VIEW.z) - (Mathf.Max(AABB.x, VIEW.x) - Mathf.Min(AABB.z, VIEW.z)) + widthAdjustment;
+                shadowMapBound.w = (AABB.y - AABB.w) + (VIEW.y - VIEW.w) - (Mathf.Max(AABB.y, VIEW.y) - Mathf.Min(AABB.w, VIEW.w)) + heightAdjustment;
+                //leftbottom point(0,0) of shadow map
+                if (shadowMapBound.z > 1)
+                {
+                    shadowMapBound.x = 0;
+                    shadowMapBound.z = 1;
+                }
+                else
+                    shadowMapBound.x = Mathf.Max(AABB.z, VIEW.z) + OriginWidthAdjustment;
+
+                if (shadowMapBound.w > 1)
+                {
+                    shadowMapBound.y = 0;
+                    shadowMapBound.w = 1;
+                }
+                else
+                    shadowMapBound.y = Mathf.Max(AABB.w, VIEW.w) + OriginHeightAdjustment;
+                //0.04 is the offset in case contains some objects that intersect with the bounds of frustum.
+            }
+        }
+
+        public static void GetViewBounds(Camera realCamera)
+        {
+            if (!realCamera)
+                return;
+
+            {
+                var farClip = realCamera.farClipPlane;
+                var nearClip = realCamera.nearClipPlane;
+                var aspect = realCamera.aspect;
+
+                float halfFOV = (realCamera.fieldOfView * 0.5f) * Mathf.Deg2Rad;
+
+                float farHeight = farClip * Mathf.Tan(halfFOV);
+                float farWidth = farHeight * aspect;
+
+                float nearHeight = nearClip * Mathf.Tan(halfFOV);
+                float nearWidth = nearHeight * aspect;
+
+                viewFrustumBound[0] = new Vector4(farWidth, farHeight, farClip, 1);
+                viewFrustumBound[1] = new Vector4(farWidth, -farHeight, farClip, 1);
+                viewFrustumBound[2] = new Vector4(-farWidth, farHeight, farClip, 1);
+                viewFrustumBound[3] = new Vector4(-farWidth, -farHeight, farClip, 1);
+                viewFrustumBound[4] = new Vector4(nearWidth, nearHeight, nearClip, 1);
+                viewFrustumBound[5] = new Vector4(nearWidth, -nearHeight, nearClip, 1);
+                viewFrustumBound[6] = new Vector4(-nearWidth, nearHeight, nearClip, 1);
+                viewFrustumBound[7] = new Vector4(-nearWidth, -nearHeight, nearClip, 1);
+            }
+
+            var planePoint = new Vector3(0, 60, 0);
+            for (int i = 0; i < 8; i++)
+            {
+                viewFrustumBound[i] = realCamera.transform.TransformPoint(viewFrustumBound[i]);
+                viewFrustumBound[i].w = 1f;
+            }
+        }
+
+        public static void CalculateBigWorldShadowArea
+            (Camera realCamera, ref Bounds bounds, ref Matrix4x4 shadowTransform, float heightOffset, float widthAdjustment, float heightAdjustment, float OriginWidthAdjustment, float OriginHeightAdjustment)
+        {
+
+            //Get intersection points of the frustum of the main camera and the terrain.
+            CachedShadowmapUtils.GetViewBoundsBigWorld(realCamera, heightOffset);
+            //Get position of the cullingResults AABB box in world coordinate.
+            CachedShadowmapUtils.GetAABBBoundsBigWorld(ref bounds);
+
+            for (int i = 0; i < 8; i++)
+            {
+                //Transfer to those in light source coordinate.
+                AABBBoxPoints[i] = shadowTransform * AABBBoxPoints[i];
+                viewFrustumBound[i] = shadowTransform * viewFrustumBound[i];
+            }
+
+            var vector = viewFrustumBound[2] - viewFrustumBound[0];
+            var angleToRotate = -MathF.Atan(vector.y / vector.x) + Mathf.PI;
+            rotationMatrix.m00 = MathF.Cos(angleToRotate);
+            rotationMatrix.m01 = -MathF.Sin(angleToRotate);
+            rotationMatrix.m11 = MathF.Cos(angleToRotate);
+            rotationMatrix.m10 = MathF.Sin(angleToRotate);
+
+
+            var mid = (viewFrustumBound[0] + viewFrustumBound[1] + viewFrustumBound[2] + viewFrustumBound[3]) / 4;
+            translationMtrix.m03 = -mid.x;
+            translationMtrix.m13 = -mid.y;
+
+            var rotationByCentroid = translationMtrix.inverse * rotationMatrix * translationMtrix;
+            for (int i = 0; i < 8; i++)
+            {
+                //Transfer to those in light source coordinate.
+                AABBBoxPoints[i] = rotationByCentroid * AABBBoxPoints[i];
+                viewFrustumBound[i] = rotationByCentroid * viewFrustumBound[i];
+            }
+
+            {
+                {
+                    var AABB = maxBound(AABBBoxPoints, 4);
+                    var VIEW = maxBound(viewFrustumBound, 8);
+                    //lenght and width of shadow map
+                    shadowMapBound.z = ((AABB.x - AABB.z) + (VIEW.x - VIEW.z) - (Mathf.Max(AABB.x, VIEW.x) - Mathf.Min(AABB.z, VIEW.z))) + widthAdjustment;
+                    shadowMapBound.w = ((AABB.y - AABB.w) + (VIEW.y - VIEW.w) - (Mathf.Max(AABB.y, VIEW.y) - Mathf.Min(AABB.w, VIEW.w))) + heightAdjustment;
+                    //leftbottom point(0,0) of shadow map
+                    shadowMapBound.x = Mathf.Max(AABB.z, VIEW.z) + OriginWidthAdjustment;
+                    shadowMapBound.y = Mathf.Max(AABB.w, VIEW.w) + OriginHeightAdjustment;
+                }
+            }
+        }
+
+        public static void GetAABBBoundsBigWorld(ref Bounds bounds)
+        {
+            AABBBoxPoints[0].x = bounds.center.x + bounds.extents.x;
+            AABBBoxPoints[0].y = bounds.center.y - bounds.extents.y;
+            AABBBoxPoints[0].z = bounds.center.z + bounds.extents.z;
+            AABBBoxPoints[1].x = bounds.center.x + bounds.extents.x;
+            AABBBoxPoints[1].y = bounds.center.y + bounds.extents.y;
+            AABBBoxPoints[1].z = bounds.center.z - bounds.extents.z;
+            AABBBoxPoints[2].x = bounds.center.x - bounds.extents.x;
+            AABBBoxPoints[2].y = bounds.center.y + bounds.extents.y;
+            AABBBoxPoints[2].z = bounds.center.z + bounds.extents.z;
+            AABBBoxPoints[3].x = bounds.center.x - bounds.extents.x;
+            AABBBoxPoints[3].y = bounds.center.y + bounds.extents.y;
+            AABBBoxPoints[3].z = bounds.center.z - bounds.extents.z;
+
+            AABBBoxPoints[0].y = AABBBoxPoints[0].y > 60f ? AABBBoxPoints[0].y : 60f;// anything placed under the ground(height: 60) is not under consideration.
+        }
+        public static void GetViewBoundsBigWorld(Camera realCamera, float heightOffset)
+        {
+            if (!realCamera)
+                return;
+            var camRelaCornerPos = GetCameraFovPositionByDistance(realCamera.fieldOfView, realCamera.aspect,
+                realCamera.farClipPlane);
+            var planePoint = new Vector3(0, 60, 0);
+            for (int i = 0; i < 4; i++)
+            {
+                var worldSpaceCorner = realCamera.transform.TransformPoint(camRelaCornerPos[i]);
+                //这里的地图法线写死 Vector3.up, 不再获取Map 的Go
+                var v0 = GetIntersectWithLineAndPlane(realCamera.transform.position,
+                    realCamera.transform.position - worldSpaceCorner, Vector3.up, planePoint);
+                {
+                    viewFrustumBound[i].x = v0.x;
+                    viewFrustumBound[i].y = v0.y;
+                    viewFrustumBound[i].z = v0.z;
+                }
+            }
+            planePoint = new Vector3(0, 60 + heightOffset, 0);
+            for (int i = 4; i < 8; i++)
+            {
+                var worldSpaceCorner = realCamera.transform.TransformPoint(camRelaCornerPos[i - 4]);
+                //这里的地图法线写死 Vector3.up, 不再获取Map 的Go
+                var v0 = GetIntersectWithLineAndPlane(realCamera.transform.position,
+                    realCamera.transform.position - worldSpaceCorner, Vector3.up, planePoint);
+                {
+                    viewFrustumBound[i].x = v0.x;
+                    viewFrustumBound[i].y = v0.y;
+                    viewFrustumBound[i].z = v0.z;
+                }
+            }
+        }
+
+        public static Vector3[] GetCameraFovPositionByDistance(float fov, float aspect, float distance)
+        {
+            Vector3[] corners = new Vector3[4];
+
+            float halfFOV = (fov * 0.5f) * Mathf.Deg2Rad;
+
+            float height = distance * Mathf.Tan(halfFOV);
+            float width = height * aspect;
+
+            corners[0] = new Vector3(width, height, distance);
+            corners[1] = new Vector3(width, -height, distance);
+            corners[2] = new Vector3(-width, height, distance);
+            corners[3] = new Vector3(-width, -height, distance);
+
+            return corners;
+        }
+
+        public static Vector3 GetIntersectWithLineAndPlane(Vector3 point, Vector3 direct, Vector3 planeNormal, Vector3 planePoint)
+        {
+            float d = Vector3.Dot(planePoint - point, planeNormal) / Vector3.Dot(direct.normalized, planeNormal);
+            return d * direct.normalized + point;
+        }
+
+        public static Vector4 maxBound(Vector4[] bounds, int num)
+        {
+            float maxX = 0, maxY = 0;
+            for (int i = 0; i < num; i++)
+            {
+                maxX = bounds[i].x > maxX ? bounds[i].x : maxX;
+                maxY = bounds[i].y > maxY ? bounds[i].y : maxY;
+            }
+
+            float minX = 1, minY = 1;
+            for (int i = 0; i < num; i++)
+            {
+                minX = bounds[i].x < minX ? bounds[i].x : minX;
+                minY = bounds[i].y < minY ? bounds[i].y : minY;
+            }
+            return new Vector4(maxX, maxY, minX, minY);
+        }
+
+        public static void Clear() 
+        {
+            textureScaleAndBias = rotationMatrix = translationMtrix = Matrix4x4.identity;
+        }
+    }
+}

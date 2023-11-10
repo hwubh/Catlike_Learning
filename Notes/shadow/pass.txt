@@ -1,0 +1,892 @@
+using System;
+
+namespace UnityEngine.Rendering.Universal.Internal
+{
+    public class CachedShadowMapPass : ScriptableRenderPass
+    {
+        float m_MaxShadowDistance;
+        int m_ShadowmapWidth;
+        int m_ShadowmapHeight;
+        bool m_SupportsBoxFilterForShadows;
+        Matrix4x4[] m_ShadowMatrices;
+        ShadowSliceData[] m_CascadeSlices;
+        Vector4[] m_CascadeSplitDistances;
+
+        public CachedShadowMapFeature.CachedShadowMapSettings m_Settings;
+
+        //check if shadow is dirty
+        public static int isDirty = 1;
+        //check if camera rotates
+        public static bool isRotate = false;
+        //Use a texture to draw shadow
+        internal RenderTexture m_StaticShadowmapTexture;
+        private RenderTexture m_DynamicShadowmapTexture;
+        private string TextureNmae = "Static Shadow Map";
+
+        internal static RenderTexture m_ShadowmapTextureEmpty;
+        //Store dyanmic and static object separately
+        CullingResults dynamicCullingResults;
+        CullingResults staticCullingResults;
+        //Static Drawing Properties
+        private GameObject staticCameraGO = null;
+        private Camera staticCamera = null;
+        private DrawingSettings shadowSettings;
+        private FilteringSettings shadowFilterSettings = new FilteringSettings(RenderQueueRange.all, -1, uint.MaxValue);
+        //position of visual camera
+        private Vector3 cameraPosition = new Vector3(0, 0, 0);
+
+        // view matrices
+        private Matrix4x4 staticWorldToShadowMatrix = new Matrix4x4();
+        private Matrix4x4 dynamicWorldToShadowMatrix = new Matrix4x4();
+        //AABB box
+        private Matrix4x4 staticTextureToTexture = Matrix4x4.identity;
+        private Matrix4x4 dynamicTextureToTexture = Matrix4x4.identity;
+        //Temp var Success for Setup
+        private bool isDraw = false;
+        //Current Camera
+        private Camera realCamera = Camera.current;
+        //If current camera is MainCamera
+        public static bool isMainCamera = true;
+        public static bool isCloseFit = true;
+        private Matrix4x4 cameraPos;
+        private Quaternion cameraQuaternion;
+
+        //Culling Mask
+        public static int staticLayerMask = 0;
+        public static int dynamicLayerMask = 0;
+
+        //Shadow Bias
+        public static float depthBias = 0;
+        public static float normalBias = 0;
+
+        //Shadow Distance
+        public static float shadowDistance = 0;
+
+        //Shadow area Parameters
+        public static float widthAdjustment = 0;
+        public static float heightAdjustment = 0;
+        public static float OriginWidthAdjustment = 0;
+        public static float OriginHeightAdjustment = 0;
+
+        //ShadowSize
+        public static int shadowResolution = 1280;
+
+        //CreateEmptyShadowmap
+        private bool m_CreateEmptyShadowmap = true;
+        private bool m_CreateEmptyShadowmap_S = true;
+
+        //Bounds
+        private Bounds bounds, bounds_S;
+
+        //Ground Height Offset
+        public static float heightOffset = 0f;
+
+        //private bool tempBoolean = true;
+        //private bool tempBoolean2 = true;
+
+        const string m_ProfilerTag = "CustomShadow";
+        ProfilingSampler m_ProfilingSampler = new ProfilingSampler(m_ProfilerTag);
+        public static ShaderTagId SHADOW_SHADER_PASS_NAME = new ShaderTagId("ShadowCaster");
+
+        private static class ShadowConstantBuffer
+        {
+            public static int _WorldToShadow;
+            public static int _ShadowParams;
+            public static int _CascadeShadowSplitSpheres0;
+            public static int _CascadeShadowSplitSpheres1;
+            public static int _CascadeShadowSplitSpheres2;
+            public static int _CascadeShadowSplitSpheres3;
+            public static int _CascadeShadowSplitSphereRadii;
+            public static int _ShadowOffset0;
+            public static int _ShadowOffset1;
+            public static int _ShadowOffset2;
+            public static int _ShadowOffset3;
+            public static int _ShadowmapSize;
+        }
+
+        public CachedShadowMapPass(CachedShadowMapFeature.CachedShadowMapSettings settings)
+        {
+            renderPassEvent = RenderPassEvent.BeforeRenderingShadows;
+
+            m_ShadowMatrices = new Matrix4x4[2];
+            m_CascadeSlices = new ShadowSliceData[2];
+            m_CascadeSplitDistances = new Vector4[2];
+
+            m_Settings = settings;
+            staticLayerMask = m_Settings.StaticLayerMask.value;
+            dynamicLayerMask = m_Settings.DynamicLayerMask.value;
+            depthBias = m_Settings.DepthBias;
+            normalBias = m_Settings.NormalBias;
+
+            widthAdjustment = m_Settings.widthAdjustment;
+            heightAdjustment = m_Settings.heightAdjustment;
+            OriginWidthAdjustment = m_Settings.OriginWidthAdjustment;
+            OriginHeightAdjustment = m_Settings.OriginHeightAdjustment;
+
+            shadowResolution = (int) m_Settings.shadowResolution;
+            m_ShadowmapWidth = m_ShadowmapHeight = shadowResolution;
+
+            ShadowConstantBuffer._WorldToShadow = Shader.PropertyToID("_MainLightWorldToShadow");
+            ShadowConstantBuffer._ShadowParams = Shader.PropertyToID("_MainLightShadowParams");
+            ShadowConstantBuffer._CascadeShadowSplitSpheres0 = Shader.PropertyToID("_CascadeShadowSplitSpheres0");
+            ShadowConstantBuffer._CascadeShadowSplitSpheres1 = Shader.PropertyToID("_CascadeShadowSplitSpheres1");
+            ShadowConstantBuffer._CascadeShadowSplitSpheres2 = Shader.PropertyToID("_CascadeShadowSplitSpheres2");
+            ShadowConstantBuffer._CascadeShadowSplitSpheres3 = Shader.PropertyToID("_CascadeShadowSplitSpheres3");
+            ShadowConstantBuffer._CascadeShadowSplitSphereRadii = Shader.PropertyToID("_CascadeShadowSplitSphereRadii");
+            ShadowConstantBuffer._ShadowOffset0 = Shader.PropertyToID("_MainLightShadowOffset0");
+            ShadowConstantBuffer._ShadowOffset1 = Shader.PropertyToID("_MainLightShadowOffset1");
+            ShadowConstantBuffer._ShadowOffset2 = Shader.PropertyToID("_MainLightShadowOffset2");
+            ShadowConstantBuffer._ShadowOffset3 = Shader.PropertyToID("_MainLightShadowOffset3");
+            ShadowConstantBuffer._ShadowmapSize = Shader.PropertyToID("_MainLightShadowmapSize");
+        }
+
+        public bool Setup(ref RenderingData renderingData)
+        {
+            //var transform = renderingData.cameraData.camera.transform;
+            var tempPos = renderingData.cameraData.camera.transform.localToWorldMatrix;
+            if (cameraPos == null || cameraQuaternion == null)
+            {
+                //cameraQuaternion = transform.rotation;
+                cameraPos = tempPos;
+            }
+
+            if (cameraPos != tempPos)
+            {
+                isDirty = 1;
+                //if (cameraQuaternion != transform.rotation)
+                //    isRotate = true;
+                //else
+                //    isRotate = false;
+                cameraPos = tempPos;
+                //cameraQuaternion = transform.rotation;
+            }
+
+            //reset parameters
+            Clear();
+
+            if (!renderingData.cameraData.renderer.stripShadowsOffVariants)
+                return false;
+
+            m_ShadowmapTextureEmpty = ShadowUtils.GetTemporaryShadowTexture(1, 1, 16);
+            m_DynamicShadowmapTexture = ShadowUtils.GetTemporaryShadowTexture(m_ShadowmapWidth, m_ShadowmapHeight, 16);
+
+            //Allocate the static render texture.
+            m_ShadowmapWidth = m_ShadowmapHeight = shadowResolution;
+            if (m_StaticShadowmapTexture == null)
+            {
+                m_StaticShadowmapTexture = new RenderTexture(m_ShadowmapWidth, m_ShadowmapHeight, 16, RenderingUtils.SupportsRenderTextureFormat(RenderTextureFormat.Shadowmap) && (SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2)
+                ? RenderTextureFormat.Shadowmap
+                : RenderTextureFormat.Depth);
+                m_StaticShadowmapTexture.name = TextureNmae;
+                m_StaticShadowmapTexture.Create();
+                m_StaticShadowmapTexture.filterMode = FilterMode.Point;
+                m_StaticShadowmapTexture.wrapMode = TextureWrapMode.Clamp;
+            }
+
+            return true;
+        }
+
+
+        /// <inheritdoc/>
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        {
+
+            ref LightData lightData = ref renderingData.lightData;
+            ref CameraData cameraData = ref renderingData.cameraData;
+            realCamera = renderingData.cameraData.camera;
+
+            int shadowLightIndex = lightData.mainLightIndex;
+            if (shadowLightIndex == -1)
+            {
+                SetEmptyMainLightCascadeShadowmap(ref context);
+                return;
+            }
+
+            if (cameraData.cameraType != CameraType.Game)
+            {
+                SetEmptyMainLightCascadeShadowmap(ref context);
+                return;
+            }
+
+            VisibleLight shadowLight = lightData.visibleLights[shadowLightIndex];
+            Light light = shadowLight.light;
+            if (light.shadows == LightShadows.None)
+            {
+                SetEmptyMainLightCascadeShadowmap(ref context);
+                return;
+            }
+
+            if (shadowLight.lightType != LightType.Directional)
+            {
+                Debug.LogWarning("Only directional lights are supported as main light.");
+            }
+
+            //quality of shadow map
+            renderingData.shadowData.bias[shadowLightIndex] += new Vector4(depthBias, normalBias);
+
+            if (isMainCamera)
+            {
+                if (!(isDirty > 0) && m_Settings.EnableCache)
+                {
+                    PrepareShadowmapParameters(ref renderingData, context, isCloseFit);
+                }
+                else
+                {
+                    if (!isCloseFit)
+                    {
+                        dynamicCullingResults = renderingData.cullResults;
+                        Bounds bounds;
+                        m_CreateEmptyShadowmap = !dynamicCullingResults.GetShadowCasterBounds(lightData.mainLightIndex, out bounds);
+                        if (m_CreateEmptyShadowmap)
+                        {
+                            SetEmptyMainLightCascadeShadowmap(ref context);
+                            return;
+                        }
+                        ShadowSplitData splitData;
+                        //Get proper view and projection matrices of virtual cameras
+                        m_CreateEmptyShadowmap = m_CreateEmptyShadowmap || !dynamicCullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(shadowLightIndex,
+                            0, renderingData.shadowData.mainLightShadowCascadesCount, renderingData.shadowData.mainLightShadowCascadesSplit, m_ShadowmapWidth, light.shadowNearPlane,
+                            out m_CascadeSlices[0].viewMatrix, out m_CascadeSlices[0].projectionMatrix, out splitData);
+                        if (m_CreateEmptyShadowmap)
+                        {
+                            SetEmptyMainLightCascadeShadowmap(ref context);
+                            return;
+                        }
+
+                        m_CascadeSlices[0].shadowTransform = ShadowUtils.GetShadowTransform(m_CascadeSlices[0].projectionMatrix, m_CascadeSlices[0].viewMatrix);
+
+                        dynamicWorldToShadowMatrix = m_CascadeSlices[0].shadowTransform;
+
+                        //Get proper view and projection matrices of virtual cameras
+                        //m_CreateEmptyShadowmap = m_CreateEmptyShadowmap || !CachedShadowmapUtils.CalculateShadowArea(isMainCamera, realCamera, ref bounds, ref m_CascadeSlices[0].shadowTransform, ref dynamicTextureToTexture, ref dynamicWorldToShadowMatrix, heightOffset);
+                        if (m_CreateEmptyShadowmap)
+                        {
+                            SetEmptyMainLightCascadeShadowmap(ref context);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        {
+                            ScriptableCullingParameters dynamicCullingParameters;
+                            realCamera = cameraData.camera;
+                            realCamera.TryGetCullingParameters(out dynamicCullingParameters);
+
+                            //Only contains static objects
+                            dynamicCullingParameters.cullingMask = (uint) (dynamicLayerMask | staticLayerMask);
+                            dynamicCullingParameters.maximumVisibleLights = 1;
+                            //specify frustums of virtual cameras
+                            dynamicCullingParameters.shadowDistance = cameraData.maxShadowDistance + shadowDistance;
+                            dynamicCullingResults = context.Cull(ref dynamicCullingParameters);
+                        }
+
+                        Bounds bounds;
+                        m_CreateEmptyShadowmap = !dynamicCullingResults.GetShadowCasterBounds(lightData.mainLightIndex, out bounds);
+                        if (m_CreateEmptyShadowmap)
+                        {
+                            SetEmptyMainLightCascadeShadowmap(ref context);
+                            return;
+                        }
+                        ShadowSplitData splitData;
+                        //Get proper view and projection matrices of virtual cameras
+                        m_CreateEmptyShadowmap = m_CreateEmptyShadowmap || !dynamicCullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(shadowLightIndex,
+                            0, renderingData.shadowData.mainLightShadowCascadesCount, renderingData.shadowData.mainLightShadowCascadesSplit, m_ShadowmapWidth, light.shadowNearPlane,
+                            out m_CascadeSlices[0].viewMatrix, out m_CascadeSlices[0].projectionMatrix, out splitData);
+                        if (m_CreateEmptyShadowmap)
+                        {
+                            SetEmptyMainLightCascadeShadowmap(ref context);
+                            return;
+                        }
+
+                        m_CascadeSlices[0].shadowTransform = ShadowUtils.GetShadowTransform(m_CascadeSlices[0].projectionMatrix, m_CascadeSlices[0].viewMatrix);
+
+                        dynamicWorldToShadowMatrix = m_CascadeSlices[0].shadowTransform;
+
+                        //Get proper view and projection matrices of virtual cameras
+                        m_CreateEmptyShadowmap = m_CreateEmptyShadowmap || !CachedShadowmapUtils.CalculateShadowArea(isMainCamera, realCamera, ref bounds, ref m_CascadeSlices[0].shadowTransform, ref dynamicTextureToTexture, ref dynamicWorldToShadowMatrix, heightOffset, widthAdjustment, heightAdjustment, OriginWidthAdjustment, OriginHeightAdjustment);
+                        if (m_CreateEmptyShadowmap)
+                        {
+                            SetEmptyMainLightCascadeShadowmap(ref context);
+                            return;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                PrepareShadowmapParameters(ref renderingData, context,true);
+            }
+            
+            m_MaxShadowDistance = (cameraData.maxShadowDistance + shadowDistance) * (cameraData.maxShadowDistance + shadowDistance);
+            RenderShadowmap(ref context, ref dynamicCullingResults, ref renderingData.lightData, ref renderingData.shadowData, ref renderingData.cameraData);
+        }
+
+        void PrepareShadowmapParameters(ref RenderingData renderingData, ScriptableRenderContext context, bool isOpenCloseFit)
+        {
+            ref CameraData cameraData = ref renderingData.cameraData;
+            ref LightData lightData = ref renderingData.lightData;
+            var shadowLightIndex = lightData.mainLightIndex;
+            var light = lightData.visibleLights[shadowLightIndex].light;
+            ShadowSplitData splitData;
+
+            ScriptableCullingParameters staticCullingParameters;
+            ScriptableCullingParameters dynamicCullingParameters;
+            realCamera.TryGetCullingParameters(out staticCullingParameters);
+            realCamera.TryGetCullingParameters(out dynamicCullingParameters);
+            //Only contains static objects
+            staticCullingParameters.cullingMask = (uint) staticLayerMask;//(uint) m_Settings.StaticLayerMask.value;
+            dynamicCullingParameters.cullingMask = (uint) dynamicLayerMask;
+            staticCullingParameters.maximumVisibleLights = dynamicCullingParameters.maximumVisibleLights = 1;
+            //specify frustums of virtual cameras
+            staticCullingParameters.shadowDistance = dynamicCullingParameters.shadowDistance = cameraData.maxShadowDistance + shadowDistance;
+            staticCullingResults = context.Cull(ref staticCullingParameters);
+            dynamicCullingResults = context.Cull(ref dynamicCullingParameters);
+
+            m_CreateEmptyShadowmap = dynamicCullingResults.visibleLights.Length <= 0 || !dynamicCullingResults.GetShadowCasterBounds(lightData.mainLightIndex, out bounds);
+            m_CreateEmptyShadowmap_S = staticCullingResults.visibleLights.Length <= 0 || !staticCullingResults.GetShadowCasterBounds(lightData.mainLightIndex, out bounds_S);
+
+            if (m_CreateEmptyShadowmap && m_CreateEmptyShadowmap_S)
+            {
+                SetEmptyMainLightCascadeShadowmap(ref context);
+                return;
+            }
+
+            if (isOpenCloseFit)
+            {
+                //place virtual camera in light source. Get view and projection matrices.
+                m_CreateEmptyShadowmap = m_CreateEmptyShadowmap || !dynamicCullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(lightData.mainLightIndex,
+                    0, renderingData.shadowData.mainLightShadowCascadesCount, renderingData.shadowData.mainLightShadowCascadesSplit, m_ShadowmapWidth, light.shadowNearPlane,
+                    out m_CascadeSlices[0].viewMatrix, out m_CascadeSlices[0].projectionMatrix, out splitData);
+
+                m_CreateEmptyShadowmap_S = m_CreateEmptyShadowmap_S || !staticCullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(lightData.mainLightIndex,
+                    0, renderingData.shadowData.mainLightShadowCascadesCount, renderingData.shadowData.mainLightShadowCascadesSplit, m_ShadowmapWidth, light.shadowNearPlane,
+                    out m_CascadeSlices[1].viewMatrix, out m_CascadeSlices[1].projectionMatrix, out splitData);
+            }
+            else
+            {
+                //place virtual camera in light source. Get view and projection matrices.
+                m_CreateEmptyShadowmap = m_CreateEmptyShadowmap || !renderingData.cullResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(lightData.mainLightIndex,
+                    0, renderingData.shadowData.mainLightShadowCascadesCount, renderingData.shadowData.mainLightShadowCascadesSplit, m_ShadowmapWidth, light.shadowNearPlane,
+                    out m_CascadeSlices[0].viewMatrix, out m_CascadeSlices[0].projectionMatrix, out splitData);
+
+                m_CreateEmptyShadowmap_S = m_CreateEmptyShadowmap_S || !renderingData.cullResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(lightData.mainLightIndex,
+                    0, renderingData.shadowData.mainLightShadowCascadesCount, renderingData.shadowData.mainLightShadowCascadesSplit, m_ShadowmapWidth, light.shadowNearPlane,
+                    out m_CascadeSlices[1].viewMatrix, out m_CascadeSlices[1].projectionMatrix, out splitData);
+            }
+
+            if (m_CreateEmptyShadowmap && m_CreateEmptyShadowmap_S)
+            {
+                SetEmptyMainLightCascadeShadowmap(ref context);
+                return;
+            }
+
+            m_CascadeSlices[0].shadowTransform = ShadowUtils.GetShadowTransform(m_CascadeSlices[0].projectionMatrix, m_CascadeSlices[0].viewMatrix);
+            m_CascadeSlices[1].shadowTransform = ShadowUtils.GetShadowTransform(m_CascadeSlices[1].projectionMatrix, m_CascadeSlices[1].viewMatrix);
+
+            dynamicWorldToShadowMatrix = m_CascadeSlices[0].shadowTransform;
+            staticWorldToShadowMatrix = m_CascadeSlices[1].shadowTransform;
+
+            //Get proper view and projection matrices of virtual cameras
+            if (isOpenCloseFit)
+            {
+                m_CreateEmptyShadowmap = m_CreateEmptyShadowmap || !CachedShadowmapUtils.CalculateShadowArea(isMainCamera, realCamera, ref bounds, ref m_CascadeSlices[0].shadowTransform, ref dynamicTextureToTexture, ref dynamicWorldToShadowMatrix, heightOffset, widthAdjustment, heightAdjustment, OriginWidthAdjustment, OriginHeightAdjustment);
+                m_CreateEmptyShadowmap_S = m_CreateEmptyShadowmap_S || !CachedShadowmapUtils.CalculateShadowArea(isMainCamera, realCamera, ref bounds_S, ref m_CascadeSlices[1].shadowTransform, ref staticTextureToTexture, ref staticWorldToShadowMatrix, heightOffset, widthAdjustment, heightAdjustment, OriginWidthAdjustment, OriginHeightAdjustment);
+            }
+            if (m_CreateEmptyShadowmap && m_CreateEmptyShadowmap_S)
+            {
+                SetEmptyMainLightCascadeShadowmap(ref context);
+                return;
+            }
+        }
+
+        void RenderShadowmap(ref ScriptableRenderContext context, ref CullingResults cullResults, ref LightData lightData, ref ShadowData shadowData, ref CameraData cameraData)
+        {
+
+
+            int shadowLightIndex = lightData.mainLightIndex;
+
+            VisibleLight shadowLight = lightData.visibleLights[shadowLightIndex];
+            Light light = shadowLight.light;
+
+            CommandBuffer cmd = CommandBufferPool.Get();
+            using (new ProfilingScope(cmd, m_ProfilingSampler))
+            {
+                if (isMainCamera)
+                {
+                    if (m_Settings.EnableCache)
+                    {
+                        if (!staticCameraGO)
+                        {
+                            var viewMatrix = m_CascadeSlices[1].viewMatrix;
+                            {
+                                cameraPosition.x = viewMatrix.m03;
+                                cameraPosition.y = viewMatrix.m13;
+                                cameraPosition.z = viewMatrix.m23;
+                            }
+                            staticCameraGO = new GameObject("Static Camera");
+                            staticCameraGO.transform.position = cameraPosition;
+                            staticCamera = staticCameraGO.AddComponent<Camera>();
+
+                            staticCamera.orthographic = true;
+                            staticCamera.orthographicSize = 1;
+                            staticCamera.nearClipPlane = 0;
+                            staticCamera.farClipPlane = 1;
+                            staticCamera.allowHDR = false;
+                            staticCamera.allowMSAA = false;
+                            staticCamera.clearFlags = CameraClearFlags.Nothing;
+                            staticCamera.allowDynamicResolution = false;
+                            staticCamera.depth = realCamera.depth - 1;
+                            // For shadow camera, must set the render target to the camera,
+                            // for setting the viewport size.
+                            //staticCamera.targetTexture = m_StaticShadowmapTexture;
+                            staticCamera.depthTextureMode = DepthTextureMode.Depth;
+                            staticCameraGO.hideFlags = HideFlags.HideAndDontSave;
+                            staticCameraGO.SetActive(false);
+                        }
+                        //if (!staticCamera.targetTexture)
+                        //    staticCamera.targetTexture = m_StaticShadowmapTexture;
+
+                        Bounds bounds;
+                        if (!(isDirty > 0))
+                        {
+                            if (m_StaticShadowmapTexture && !isDraw)
+                            {
+                                context.SetupCameraProperties(staticCamera, false);
+                                //clear shadow map
+                                if (m_CreateEmptyShadowmap_S)
+                                    cmd.SetRenderTarget(m_ShadowmapTextureEmpty, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                                else
+                                    cmd.SetRenderTarget(m_StaticShadowmapTexture, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                                RenderingUtils.CheapClear(cmd, Color.black, true, true);
+                                context.ExecuteCommandBuffer(cmd);
+                                cmd.Clear();
+
+                                //Use "ShadowCaster" pass to draw. P.S.: The "No shadow caster" property of MeshRenderer will be ignored if use "DrawRenders()". 
+                                //if(shadowSettings == null)
+                                {
+                                    shadowSettings = new DrawingSettings(SHADOW_SHADER_PASS_NAME, new SortingSettings(staticCamera) { criteria = SortingCriteria.OptimizeStateChanges });
+                                    shadowSettings.enableDynamicBatching = true;
+                                    shadowSettings.enableInstancing = true;
+                                }
+
+                                shadowFilterSettings = new FilteringSettings(RenderQueueRange.all, -1, uint.MaxValue);
+                                //Draw on static shadow map
+                                if (!m_CreateEmptyShadowmap_S)
+                                    DrawShadows(context, cmd, staticCullingResults, shadowData, shadowLightIndex, shadowLight, 1);
+                                isDraw = true;
+
+                            }
+
+                        }
+                        else if (isDraw)
+                        {
+                            context.SetupCameraProperties(staticCamera, false);
+                            //clear shadow map
+                            if (m_CreateEmptyShadowmap_S)
+                                cmd.SetRenderTarget(m_ShadowmapTextureEmpty, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                            else
+                                cmd.SetRenderTarget(m_StaticShadowmapTexture, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                            RenderingUtils.CheapClear(cmd, Color.black, true, true);
+                            context.ExecuteCommandBuffer(cmd);
+                            cmd.Clear();
+                            isDraw = false;
+                        }
+
+                        //Allocate the dynamic render texture.
+                        if (m_CreateEmptyShadowmap || !m_DynamicShadowmapTexture)
+                        {
+                            cmd.SetRenderTarget(m_ShadowmapTextureEmpty, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                            RenderingUtils.CheapClear(cmd, Color.black, true, true);
+                            context.ExecuteCommandBuffer(cmd);
+                            cmd.Clear();
+                            if (isDirty > 0)
+                                isDirty--;
+                        }
+                        else if ((isDirty > 0))
+                        {
+                            cmd.SetRenderTarget(m_DynamicShadowmapTexture, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                            RenderingUtils.CheapClear(cmd, Color.black, true, true);
+                            DrawShadows(context, cmd, dynamicCullingResults, shadowData, shadowLightIndex, shadowLight);
+                        }
+                        else
+                        {
+                            cmd.SetRenderTarget(m_DynamicShadowmapTexture, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                            RenderingUtils.CheapClear(cmd, Color.black, true, true);
+                            DrawShadows(context, cmd, dynamicCullingResults, shadowData, shadowLightIndex, shadowLight);
+                        }
+                    }
+                    else
+                    {
+                        //Allocate the dynamic render texture.
+                        if (m_CreateEmptyShadowmap || !m_DynamicShadowmapTexture)
+                            cmd.SetRenderTarget(m_ShadowmapTextureEmpty, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                        else
+                            cmd.SetRenderTarget(m_DynamicShadowmapTexture, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                        RenderingUtils.CheapClear(cmd, Color.black, true, true);
+                        if (!m_CreateEmptyShadowmap)
+                            DrawShadows(context, cmd, cullResults, shadowData, shadowLightIndex, shadowLight);
+                    }
+                }
+                else
+                {
+                    if (m_Settings.EnableCache)
+                    {
+                        if (!staticCameraGO)
+                        {
+                            var viewMatrix = m_CascadeSlices[1].viewMatrix;
+                            {
+                                cameraPosition.x = viewMatrix.m03;
+                                cameraPosition.y = viewMatrix.m13;
+                                cameraPosition.z = viewMatrix.m23;
+                            }
+                            staticCameraGO = new GameObject("Static Camera");
+                            staticCameraGO.transform.position = cameraPosition;
+                            staticCamera = staticCameraGO.AddComponent<Camera>();
+
+                            staticCamera.orthographic = true;
+                            staticCamera.orthographicSize = 1;
+                            staticCamera.nearClipPlane = 0;
+                            staticCamera.farClipPlane = 1;
+                            staticCamera.allowHDR = false;
+                            staticCamera.allowMSAA = false;
+                            staticCamera.clearFlags = CameraClearFlags.Nothing;
+                            staticCamera.allowDynamicResolution = false;
+                            staticCamera.depth = realCamera.depth - 1;
+                            // For shadow camera, must set the render target to the camera,
+                            // for setting the viewport size.
+                            //staticCamera.targetTexture = m_StaticShadowmapTexture;
+                            staticCamera.depthTextureMode = DepthTextureMode.Depth;
+                            staticCameraGO.hideFlags = HideFlags.HideAndDontSave;
+                            staticCameraGO.SetActive(false);
+                        }
+                        //if (!staticCamera.targetTexture)
+                        //    staticCamera.targetTexture = m_StaticShadowmapTexture;
+
+                        Bounds bounds;
+                        if (!(isDirty > 0))
+                        {
+                            if (m_StaticShadowmapTexture && !isDraw)
+                            {
+                                context.SetupCameraProperties(staticCamera, false);
+                                //clear shadow map
+                                if (m_CreateEmptyShadowmap_S)
+                                    cmd.SetRenderTarget(m_ShadowmapTextureEmpty, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                                else
+                                    cmd.SetRenderTarget(m_StaticShadowmapTexture, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                                RenderingUtils.CheapClear(cmd, Color.black, true, true);
+                                context.ExecuteCommandBuffer(cmd);
+                                cmd.Clear();
+
+                                //Use "ShadowCaster" pass to draw. P.S.: The "No shadow caster" property of MeshRenderer will be ignored if use "DrawRenders()". 
+                                //if(shadowSettings == null)
+                                {
+                                    shadowSettings = new DrawingSettings(SHADOW_SHADER_PASS_NAME, new SortingSettings(staticCamera) { criteria = SortingCriteria.OptimizeStateChanges });
+                                    shadowSettings.enableDynamicBatching = true;
+                                    shadowSettings.enableInstancing = true;
+                                }
+
+                                shadowFilterSettings = new FilteringSettings(RenderQueueRange.all, -1, uint.MaxValue);
+                                //Draw on static shadow map
+                                if (!m_CreateEmptyShadowmap_S)
+                                    DrawShadows(context, cmd, staticCullingResults, shadowData, shadowLightIndex, shadowLight, 1);
+                                isDraw = true;
+
+                            }
+
+                        }
+                        else
+                        {
+                            context.SetupCameraProperties(staticCamera, false);
+                            //clear shadow map
+                            if (m_CreateEmptyShadowmap_S)
+                                cmd.SetRenderTarget(m_ShadowmapTextureEmpty, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                            else
+                                cmd.SetRenderTarget(m_StaticShadowmapTexture, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                            RenderingUtils.CheapClear(cmd, Color.black, true, true);
+                            context.ExecuteCommandBuffer(cmd);
+                            cmd.Clear();
+
+                            //Use "ShadowCaster" pass to draw. P.S.: The "No shadow caster" property of MeshRenderer will be ignored if use "DrawRenders()". 
+                            //if(shadowSettings == null)
+                            {
+                                shadowSettings = new DrawingSettings(SHADOW_SHADER_PASS_NAME, new SortingSettings(staticCamera) { criteria = SortingCriteria.OptimizeStateChanges });
+                                shadowSettings.enableDynamicBatching = true;
+                                shadowSettings.enableInstancing = true;
+                            }
+
+                            shadowFilterSettings = new FilteringSettings(RenderQueueRange.all, -1, uint.MaxValue);
+                            //Draw on static shadow map
+                            if (!m_CreateEmptyShadowmap_S)
+                                DrawShadows(context, cmd, staticCullingResults, shadowData, shadowLightIndex, shadowLight, 1);
+
+                            isDraw = false;
+                        }
+
+                        //Allocate the dynamic render texture.
+                        if (m_CreateEmptyShadowmap || !m_DynamicShadowmapTexture)
+                        {
+                            cmd.SetRenderTarget(m_ShadowmapTextureEmpty, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                            RenderingUtils.CheapClear(cmd, Color.black, true, true);
+                            context.ExecuteCommandBuffer(cmd);
+                            cmd.Clear();
+                            if (isDirty > 0)
+                                isDirty--;
+                        }
+                        else if ((isDirty > 0))
+                        {
+                            cmd.SetRenderTarget(m_DynamicShadowmapTexture, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                            RenderingUtils.CheapClear(cmd, Color.black, true, true);
+                            DrawShadows(context, cmd, dynamicCullingResults, shadowData, shadowLightIndex, shadowLight);
+                        }
+                        else
+                        {
+                            cmd.SetRenderTarget(m_DynamicShadowmapTexture, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                            RenderingUtils.CheapClear(cmd, Color.black, true, true);
+                            DrawShadows(context, cmd, dynamicCullingResults, shadowData, shadowLightIndex, shadowLight);
+                        }
+                    }
+                    else
+                    {
+                        //Allocate the dynamic render texture.
+                        if (m_CreateEmptyShadowmap || !m_DynamicShadowmapTexture)
+                            cmd.SetRenderTarget(m_ShadowmapTextureEmpty, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                        else
+                            cmd.SetRenderTarget(m_DynamicShadowmapTexture, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                        RenderingUtils.CheapClear(cmd, Color.black, true, true);
+                        if (!m_CreateEmptyShadowmap)
+                            DrawShadows(context, cmd, cullResults, shadowData, shadowLightIndex, shadowLight);
+                    }
+                }
+            }
+
+            bool softShadows = shadowLight.light.shadows == LightShadows.Soft && shadowData.supportsSoftShadows;
+            CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadows, true);
+            CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadowCascades, shadowData.mainLightShadowCascadesCount > 1);
+            CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.SoftShadows, softShadows);
+
+            SetupStaticMainLightShadowReceiverConstants(cmd, shadowLight, softShadows);
+
+            context.ExecuteCommandBuffer(cmd);
+            CommandBufferPool.Release(cmd);
+        }
+
+        //Draw shadows using "DrawShadows()" in case that some objects with the property "No Shadow Caster" being drawn.
+        void DrawShadows(ScriptableRenderContext context, CommandBuffer cmd, CullingResults cullingResults, ShadowData shadowData, int shadowLightIndex, VisibleLight shadowLight, int isStatic = 0)
+        {
+            Vector4 shadowBias = ShadowUtils.GetShadowBias(ref shadowLight, shadowLightIndex, ref shadowData, m_CascadeSlices[isStatic].projectionMatrix, m_CascadeSlices[isStatic].resolution);
+            ShadowUtils.SetupShadowCasterConstantBuffer(cmd, ref shadowLight, shadowBias);
+            cmd.SetViewProjectionMatrices(m_CascadeSlices[isStatic].viewMatrix, (isStatic == 1 ? staticTextureToTexture : dynamicTextureToTexture) * m_CascadeSlices[isStatic].projectionMatrix);
+            context.ExecuteCommandBuffer(cmd);
+            cmd.Clear();
+
+            if (isStatic == 1)
+            {
+                context.DrawRenderers(staticCullingResults, ref shadowSettings, ref shadowFilterSettings);
+            }
+            else
+            {
+                var settings = new ShadowDrawingSettings(cullingResults, shadowLightIndex);
+                context.DrawShadows(ref settings);
+                cmd.DisableScissorRect();
+                context.ExecuteCommandBuffer(cmd);
+                cmd.Clear();
+            }
+
+            if(isDirty>0)
+                isDirty--;
+        }
+
+        void SetupStaticMainLightShadowReceiverConstants(CommandBuffer cmd, VisibleLight shadowLight, bool softShadows)
+        {
+            Light light = shadowLight.light;
+
+            //int cascadeCount = m_ShadowCasterCascadesCount;
+            //for (int i = 0; i < cascadeCount; ++i)
+            //    m_ShadowMatrices[i] = m_CascadeSlices[i].shadowTransform;
+
+            // We setup and additional a no-op WorldToShadow matrix in the last index
+            // because the ComputeCascadeIndex function in Shadows.hlsl can return an index
+            // out of bounds. (position not inside any cascade) and we want to avoid branching
+            //Matrix4x4 noOpShadowMatrix = Matrix4x4.zero;
+            //noOpShadowMatrix.m22 = (SystemInfo.usesReversedZBuffer) ? 1.0f : 0.0f;
+            //for (int i = cascadeCount; i < 2; ++i)
+            //    m_ShadowMatrices[i] = noOpShadowMatrix;
+            //Setup view matrix
+            m_ShadowMatrices[0] = dynamicWorldToShadowMatrix;
+            m_ShadowMatrices[1] = staticWorldToShadowMatrix * dynamicWorldToShadowMatrix.inverse;
+            float invShadowAtlasWidth = 1.0f / m_ShadowmapWidth;
+            float invShadowAtlasHeight = 1.0f / m_ShadowmapHeight;
+            float invHalfShadowAtlasWidth = 0.5f * invShadowAtlasWidth;
+            float invHalfShadowAtlasHeight = 0.5f * invShadowAtlasHeight;
+            float softShadowsProp = softShadows ? 1.0f : 0.0f;
+
+            //To make the shadow fading fit into a single MAD instruction:
+            //distanceCamToPixel2 * oneOverFadeDist + minusStartFade (single MAD)
+            float startFade = m_MaxShadowDistance * 0.9f;
+            float oneOverFadeDist = 1 / (m_MaxShadowDistance - startFade);
+            float minusStartFade = -startFade * oneOverFadeDist;
+
+            if(m_CreateEmptyShadowmap || !m_DynamicShadowmapTexture)
+                cmd.SetGlobalTexture("_MainLightShadowmapTexture", m_ShadowmapTextureEmpty);
+            else
+                cmd.SetGlobalTexture("_MainLightShadowmapTexture", m_DynamicShadowmapTexture);
+
+            if (m_CreateEmptyShadowmap_S || !m_StaticShadowmapTexture)
+                cmd.SetGlobalTexture("_MainLightShadowmapTexture_S", m_ShadowmapTextureEmpty);
+            else
+                cmd.SetGlobalTexture("_MainLightShadowmapTexture_S", m_StaticShadowmapTexture);
+            cmd.SetGlobalMatrixArray(ShadowConstantBuffer._WorldToShadow, m_ShadowMatrices);
+            cmd.SetGlobalVector(ShadowConstantBuffer._ShadowParams, new Vector4(light.shadowStrength, softShadowsProp, oneOverFadeDist, minusStartFade));
+
+            //if (m_ShadowCasterCascadesCount > 1)
+            //{
+            //    cmd.SetGlobalVector(ShadowConstantBuffer._CascadeShadowSplitSpheres0,
+            //        m_CascadeSplitDistances[0]);
+            //    cmd.SetGlobalVector(ShadowConstantBuffer._CascadeShadowSplitSpheres1,
+            //        m_CascadeSplitDistances[1]);
+            //    cmd.SetGlobalVector(ShadowConstantBuffer._CascadeShadowSplitSpheres2,
+            //        m_CascadeSplitDistances[2]);
+            //    cmd.SetGlobalVector(ShadowConstantBuffer._CascadeShadowSplitSpheres3,
+            //        m_CascadeSplitDistances[3]);
+            //    cmd.SetGlobalVector(ShadowConstantBuffer._CascadeShadowSplitSphereRadii, new Vector4(
+            //        m_CascadeSplitDistances[0].w * m_CascadeSplitDistances[0].w,
+            //        m_CascadeSplitDistances[1].w * m_CascadeSplitDistances[1].w,
+            //        m_CascadeSplitDistances[2].w * m_CascadeSplitDistances[2].w,
+            //        m_CascadeSplitDistances[3].w * m_CascadeSplitDistances[3].w));
+            //}
+
+            if (softShadows)
+            {
+                if (m_SupportsBoxFilterForShadows)
+                {
+                    cmd.SetGlobalVector(ShadowConstantBuffer._ShadowOffset0,
+                        new Vector4(-invHalfShadowAtlasWidth, -invHalfShadowAtlasHeight, 0.0f, 0.0f));
+                    cmd.SetGlobalVector(ShadowConstantBuffer._ShadowOffset1,
+                        new Vector4(invHalfShadowAtlasWidth, -invHalfShadowAtlasHeight, 0.0f, 0.0f));
+                    cmd.SetGlobalVector(ShadowConstantBuffer._ShadowOffset2,
+                        new Vector4(-invHalfShadowAtlasWidth, invHalfShadowAtlasHeight, 0.0f, 0.0f));
+                    cmd.SetGlobalVector(ShadowConstantBuffer._ShadowOffset3,
+                        new Vector4(invHalfShadowAtlasWidth, invHalfShadowAtlasHeight, 0.0f, 0.0f));
+                }
+
+                // Currently only used when !SHADER_API_MOBILE but risky to not set them as it's generic
+                // enough so custom shaders might use it.
+                cmd.SetGlobalVector(ShadowConstantBuffer._ShadowmapSize, new Vector4(invShadowAtlasWidth,
+                    invShadowAtlasHeight,
+                    m_ShadowmapWidth, m_ShadowmapHeight));
+            }
+        }
+
+        /// <inheritdoc/>
+        public override void FrameCleanup(CommandBuffer cmd)
+        {
+            if (cmd == null)
+                throw new ArgumentNullException("cmd");
+        }
+
+        void Clear()
+        {
+            CachedShadowmapUtils.Clear();
+
+            if (m_DynamicShadowmapTexture)
+            {
+                RenderTexture.ReleaseTemporary(m_DynamicShadowmapTexture);
+                m_DynamicShadowmapTexture = null;
+            }
+
+            if (m_ShadowmapTextureEmpty)
+            {
+                RenderTexture.ReleaseTemporary(m_ShadowmapTextureEmpty);
+                m_ShadowmapTextureEmpty = null;
+            }
+
+            dynamicTextureToTexture = staticTextureToTexture = dynamicWorldToShadowMatrix = staticWorldToShadowMatrix = Matrix4x4.identity;
+
+            for (int i = 0; i < m_ShadowMatrices.Length; ++i)
+                m_ShadowMatrices[i] = Matrix4x4.identity;
+
+            for (int i = 0; i < m_CascadeSplitDistances.Length; ++i)
+                m_CascadeSplitDistances[i] = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+
+            for (int i = 0; i < m_CascadeSlices.Length; ++i)
+                m_CascadeSlices[i].Clear();
+        }
+
+        public void Destroy()
+        {
+            if (staticCamera)
+                staticCamera.targetTexture = null;
+            if (m_StaticShadowmapTexture)
+            {
+#if UNITY_EDITOR
+                Object.DestroyImmediate(m_StaticShadowmapTexture);
+#else
+                Object.Destroy(m_StaticShadowmapTexture);
+#endif
+                m_StaticShadowmapTexture = null;
+            }
+            isDraw = false;
+            Clear();
+        }
+
+        void SetEmptyMainLightCascadeShadowmap(ref ScriptableRenderContext context)
+        {
+            CommandBuffer cmd = CommandBufferPool.Get();
+            CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadows, true);
+            cmd.SetGlobalTexture("_MainLightShadowmapTexture", m_ShadowmapTextureEmpty);
+            cmd.SetGlobalTexture("_MainLightShadowmapTexture_S", m_ShadowmapTextureEmpty);
+            cmd.SetRenderTarget(m_ShadowmapTextureEmpty, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            RenderingUtils.CheapClear(cmd, Color.black, true, true);
+            context.ExecuteCommandBuffer(cmd);
+            cmd.Clear();
+
+            cmd.SetGlobalVector(ShadowConstantBuffer._ShadowParams,
+                new Vector4(1, 0, 1, 0));
+            cmd.SetGlobalVector(ShadowConstantBuffer._ShadowmapSize,
+                new Vector4(1, 1, 1, 1));
+            context.ExecuteCommandBuffer(cmd);
+            CommandBufferPool.Release(cmd);
+        }
+
+        public void SetShadowArea(float widthAdjustmentIN, float heightAdjustmentIN, float OriginWidthAdjustmentIN, float OriginHeightAdjustmentIN)
+        {
+            widthAdjustment = m_Settings.widthAdjustment = widthAdjustmentIN;
+            heightAdjustment = m_Settings.heightAdjustment = heightAdjustmentIN;
+            OriginWidthAdjustment = m_Settings.OriginWidthAdjustment = OriginWidthAdjustmentIN;
+            OriginHeightAdjustment = m_Settings.OriginHeightAdjustment = OriginHeightAdjustmentIN;
+            Destroy();
+        }
+
+        public void SetShadowArea(float offset)
+        {
+            heightOffset = offset;
+            Destroy();
+        }
+
+        public void SetResolution(int resolution)
+        {
+            shadowResolution = resolution;
+            Destroy();
+        }
+
+        //For Future Use
+        public static void SetDirty(int Dirty)
+        {
+            isDirty = Dirty;
+        }
+
+#region StaticToolFunctions
+
+        public void SetHeightOffset(float offset)
+        {
+            heightOffset = offset;
+        }
+
+        public float GetHeightOffset()
+        {
+            return heightOffset;
+        }
+
+#endregion
+    };
+}
