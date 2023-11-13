@@ -240,5 +240,22 @@
         - Cons: The reason that we use semicircle instead of a full circular blend including the backward movement is directly blending the backward movement and left/right movement causes awkward and unnatural movement. There are one possible way to solve:
           - define two hemispherical blends, one for forward motion, and one for the backward, each with strafe animations that have ben crafted to work properly when blended with the corresponding straight run. When passing from one hemisphere to the other, the explicit transition animation is play to make the cahracter adjust its gait and leg crossing appropriately.
     - Complex LERP Blends:
-    
-          
+      - Generalized One-Dimensional LERP Blending
+        define a new blend parameter $\beta$ lies in any linear range desired with any num of clips positioned at arbitrary points along this range. Pick two adjacent clips to blned, if the clips lies at pont  $\beta$<sub>1</sub> and $\beta$<sub>2</sub>. 
+        ![20231113111342](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231113111342.png)
+      - Simple Two-Dimensional LERP Blending.
+          A 2D blend involves only four animation clips can be seem as two 1D blends. The generalized blend factor *b* becoms a two-dimensional blend factor **b** = [*b*<sub>x</sub> *b*<sub>y</sub>].
+          ![20231113172431](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231113172431.png) 
+      - Triangular Two-Dimensional LERP Blending
+         To perform LERP on any num of animation clips, for each clip, designated by the index *i*, corresponds to a particular blend coordinate **b**<sub>i</sub> = [*b*<sub>ix</sub> *b*<sub>iy</sub>] in our two-dimensional blend space.
+         For example, in a triangular blend, we have ![20231113173618](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231113173618.png)
+         by assgin barycentric coordinate (1,0,0), (0,1,0), (0,0,1), we can produce the **b**<sub>0</sub>, **b**<sub>1</sub>, **b**<sub>2</sub>, and furthermore find the poses **P**<sub>0</sub> and so on. ? https://codeplea.com/triangular-interpolation
+      - Generalized Two-Dimensional LERP Blending
+         To blend any num of clips, *Delaunay triangulation* is introduced, which seperates the polygon into a set of triangles and blend together. ![20231113174913](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231113174913.png)
+
+    - Partial=Skeleton Blending
+      - Def: a techinque to implement a kind of movement that only move part of the skeleton.
+      - How: For each joint, it has its own blend percentage $\beta$<sub>j</sub>. The set of all percentage is called *blend mask* ![20231113175226](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231113175226.png). When perform partial-skeleton clips, the animator create a single animation apart from the full-body animation with the blend mask that define static joints as 0:![20231113175624](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231113175624.png) 
+      - Cons: 
+        - 1：An abrupt change in the per-joint blend factors cause the moving part appear disconnected from the rest of the body. Solved by gradully changing the blend 
+        - 2: The movements of a real human body are never totally independent and looks more "bouncy". Sovled by *additive blending*.
