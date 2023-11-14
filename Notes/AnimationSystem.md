@@ -253,9 +253,22 @@
       - Generalized Two-Dimensional LERP Blending
          To blend any num of clips, *Delaunay triangulation* is introduced, which seperates the polygon into a set of triangles and blend together. ![20231113174913](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231113174913.png)
 
-    - Partial=Skeleton Blending
+  - Partial=Skeleton Blending
       - Def: a techinque to implement a kind of movement that only move part of the skeleton.
       - How: For each joint, it has its own blend percentage $\beta$<sub>j</sub>. The set of all percentage is called *blend mask* ![20231113175226](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231113175226.png). When perform partial-skeleton clips, the animator create a single animation apart from the full-body animation with the blend mask that define static joints as 0:![20231113175624](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231113175624.png) 
       - Cons: 
         - 1：An abrupt change in the per-joint blend factors cause the moving part appear disconnected from the rest of the body. Solved by gradully changing the blend 
         - 2: The movements of a real human body are never totally independent and looks more "bouncy". Sovled by *additive blending*.
+
+  - Additive Blending
+    - Def: *Additive Blending* introduces *difference clip*, aka *additive animation clips*, which encodes the *change* from one pose to anohter pose. For example, we have a running clip called *reference clip*(R) and a running in a tired manner called *source clip*(S), the we have the *difference clip*(D) = S - R, encoding the change to make running characters looks tired. In this case, we can also apply D to other Rs, aka *target clips*(T), to create poses like characters looks tired while walking, jumping and so on.
+    - Mathematical Formulation
+      As the joint poses is a 4*4 affine transformation matrix, the subtraction of it is multiplication by the inverse matrix.
+      For every joint j, we have ![20231114160313](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231114160313.png)
+      By adding a D<sub>j</sub> onto T<sub>j</sub>, we have a new additive pose A<sub>j</sub>: ![20231114160423](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231114160423.png)
+      - Temporal Interpolation of Difference Clips
+        As the game animation are nearly never sampled on integer frame indices. The *temporally interpolate* also applies to difference, but should ensure the difference clips is undefined if S and R are not the same duration. ?
+      - Additive Blend Percentage
+        we can also apply LERP to achieve A: ![20231114161349](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231114161349.png)
+    - Additive Blending vs Partial Skeleton
+       
