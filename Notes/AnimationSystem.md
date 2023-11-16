@@ -271,4 +271,14 @@
       - Additive Blend Percentage
         we can also apply LERP to achieve A: ![20231114161349](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231114161349.png)
     - Additive Blending vs Partial Skeleton
+       Additive Blending: 
+       - Pros: Looks more natural and can apply to a wide variety of animations.
+       - Cons: May cause over-rotate the joints in skeleton when multiple difference clips are applied simultaneously.![20231115162330](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231115162330.png)
+  
+  - Applications of Additive Blending
+    - Stance Variation: For each desired stance, the animator creates a one-frame difference animation.
+    ![20231115162617](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231115162617.png)
+    - Locomotion Noise: used to layer randomness, or reactions to distractions, on top of an otherwise entirely repetitive locomotion cycle.![20231115164159](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231115164159.png)
+    - Aim and Look-At
        
+
