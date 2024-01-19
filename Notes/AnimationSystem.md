@@ -275,10 +275,26 @@
        - Pros: Looks more natural and can apply to a wide variety of animations.
        - Cons: May cause over-rotate the joints in skeleton when multiple difference clips are applied simultaneously.![20231115162330](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231115162330.png)
   
-  - Applications of Additive Blending
-    - Stance Variation: For each desired stance, the animator creates a one-frame difference animation.
+    - Applications of Additive Blending
+      - Stance Variation: For each desired stance, the animator creates a one-frame difference animation.
     ![20231115162617](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231115162617.png)
-    - Locomotion Noise: used to layer randomness, or reactions to distractions, on top of an otherwise entirely repetitive locomotion cycle.![20231115164159](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231115164159.png)
-    - Aim and Look-At
-       
+      - Locomotion Noise: used to layer randomness, or reactions to distractions, on top of an otherwise entirely repetitive locomotion cycle.![20231115164159](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20231115164159.png)
+      - Aim and Look-At
+       To permit the character to look around or to aim his weapon. The character is first animated doing some action with his head or weapon facting ahead. The angle of the aim is governed by the additive blend factor of each clip.
+       ![20240118132003](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240118132003.png)
+    - Overloading the Time Axis
+      ??
 
+  - Post Processing
+    - def: modify the pose prior to rendering the character, *animation post-processing*
+    - Procedural Animations:
+      - def: Animations generated at runtime, used in place of or in additon to hand-animated clips.
+    - Inverse Kinematics:
+      - def: Take the desired global pose of a single joint, *end effector* , as input and calculate the local poses of other joints
+      - error minimization: As there might be one solution, many or none at all, Ik works best when the skeleton starts out in a pose that is reasonbly close toe desired target.![20240120014928](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240120014928.png)
+      - In a two-joint skeleton, the rotation of these two joints can be represented by a two-dimensional angle vector $\theta$, all possible solution of which forms a two-dimensional space called *configuration space*![20240120014950](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240120014950.png)
+    - Rag Dolls
+      - def: A collection of physically simulated rigid bodies, usually used in dead bodies. The transforms are calculated by the physical system and pass to the skeletons.
+
+  - Compression Techniques
+    - Channel Omission: 
