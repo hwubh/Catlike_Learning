@@ -297,4 +297,32 @@
       - def: A collection of physically simulated rigid bodies, usually used in dead bodies. The transforms are calculated by the physical system and pass to the skeletons.
 
   - Compression Techniques
+    - A single joint pose might be composed of ten floating-point channels, three for translation, four for rotation and three for scale.
     - Channel Omission: 
+      - Omit scale channels to one or none channels.
+      - Omit translation channels on the bones of a humanoid character except for the root, facial joints and sometimes the collar bones.
+      - If quaternions are normalized, only need to store three perquat and compute the fourth at runtime.
+      - Omit channels whose pose does not change over clips.
+    - Quantization:
+      - Reduce the size of each channel. If values lie in the range [-1, 1], the exponent of float can be discarded and furthermore, we can only maintain 16 bits of precision.
+      - quantizaiton: convert 32bit IEEE float into n bit integer, is a loosy compression method when encoding and decoding.
+
+    - Sampling Frequency and Key Omission
+    Animation data tends to be large for 3 reason: The pose of each joint with ten channels of floating-point data.
+    A skeleton contains a number of joints. 
+    The pose is sampled at hight rate
+    - solution: Reduce the sample rate overall
+                Omit some of the samples.
+  
+    - Curve-Based Compression
+    Grany (A animation APIs) stores animations as a collection of nth-order, nonuniform, nonrational B-splines, allowing channels with a lot of curvature to be encoded using only a few data points.
+    ![20240125210915](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240125210915.png)
+
+    - Wavelet Compression
+    apply signal processing theory via a technique known as wavelet compression. An animation curee is decomposed into a sum of orthonormal wavelets.
+
+    - Selective Loading and Streaming
+    Animations are loaded or stremed into memory just before being nedded and dumped from memory once thye have played.
+
+  - The animation Pipeline
+  
