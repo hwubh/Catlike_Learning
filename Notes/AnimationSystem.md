@@ -325,4 +325,47 @@
     Animations are loaded or stremed into memory just before being nedded and dumped from memory once thye have played.
 
   - The animation Pipeline
-  
+    - def: Operations performed by the low-level animation engine.
+    - Stage: First, Clip decompression and pose extraction
+             Second, Pose blending.
+             Third, Global pose generation
+             Fourth, Post-processing
+             Fifth, Recalculation of global poses
+             Sixth, Matrix palette generation
+      ![20240126163005](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240126163005.png)
+
+  - Action State Machines
+    - def: A finite state machine models the actions of a game character atop the animation pipeline, providing a state-driven animaiton interface.
+    - Each state in an ASM corresponds to an arbitrarily complex blend of simultaneous animation clips (Idle, Running, etc.).
+    - characters can *transition* smoothly between states via a smooth *cross-fade*
+    - **Anticipation**: Complex movement can be realized by allowing multiple independent state machines to control a single character. Each state machine exists in aseparate *state layer*, the outputs are blended together into a final composite pose via *Flat weighted average* or *Blend tree*.
+    ![20240126163917](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240126163917.png)
+    - **The Flat Weight Average Approach**
+      - def: Maintain a flat list of all *active( weigt are nonzero)* clips, And calculate a simple N-point weighted average of the translation vectors, rotation quaternions and scale factors extracted from the N active animations.
+      ![20240126175905](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240126175905.png)
+    - **Blend Trees**
+      - def: an example of compiler theory as an *expression tree* or a *syntax tree*.
+      - Binary LERP Blend Trees
+      - Generalized One-Dimensional Blend Trees
+      - Two-Dimensional LERP Blend Trees
+      - Additive Blend Trees
+      - Layered Blend Trees
+      - Cross-Fades with Blend Trees
+    - State and Blend Tree Specifications
+    - Transitions
+      - Kinds of Transitions
+      - Transition Parameters
+      - The Transition Matrix
+      - Implementing a Transition Matrix
+    - Control Parameters
+
+  - Contraints
+    - Attachments
+    - Interobject Registration
+      - Reference Locators
+      - Find World-Space Reference Location
+      - Grabbing and Hand IK
+    - Motion Extraction and Foot IK
+      - Motion Extraction
+      - Foot IK
+    - Other Kinds of Constraints

@@ -75,6 +75,9 @@ public partial class CameraRenderer
         Profiler.EndSample();
     }
 
+#else
+
+        const string SampleName => bufferName;
 
 #endif
 }

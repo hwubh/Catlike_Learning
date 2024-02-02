@@ -3,7 +3,7 @@
 #define CUSTOM_COMMON_INCLUDED
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-#include "UnityInput.hlsl"
+#include "CustomUnityInput.hlsl"
 //将Unity内置着色器变量转换为SRP库需要的变量
 #define UNITY_MATRIX_M unity_ObjectToWorld
 #define UNITY_MATRIX_I_M unity_WorldToObject

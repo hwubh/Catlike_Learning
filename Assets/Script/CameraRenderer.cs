@@ -80,7 +80,6 @@ public partial class CameraRenderer
     {
         context.SetupCameraProperties(camera);
         CameraClearFlags flags = camera.clearFlags;
-        //cmd.ClearRenderTarget(RTClearFlags.All, Color.clear, 1.0f, 0);
         cmd.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
         cmd.BeginSample(SampleName);
         ExecuteBuffer();
