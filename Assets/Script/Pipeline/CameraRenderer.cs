@@ -16,6 +16,7 @@ public partial class CameraRenderer
     CommandBuffer cmd = new CommandBuffer { name = bufferName };
 
     static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
+    static ShaderTagId litShaderTagId = new ShaderTagId("CustomLit");
 
 #if UNITY_EDITOR
 #else
@@ -23,7 +24,7 @@ public partial class CameraRenderer
 #endif
 
     //摄像机渲染器的渲染函数，在当前渲染上下文的基础上渲染当前摄像机
-    public void Render(ScriptableRenderContext context, Camera camera)
+    public void Render(ScriptableRenderContext context, Camera camera, bool useDynamicBatching, bool useGPUInstancing)
     {
         this.context = context;
         this.camera = camera;
@@ -40,7 +41,7 @@ public partial class CameraRenderer
         }
 
         SetUp();
-        DrawVisibleGeometry();
+        DrawVisibleGeometry(useDynamicBatching, useGPUInstancing);
         DrawUnsupportedShaders();
         Submit();
     }
@@ -57,23 +58,27 @@ public partial class CameraRenderer
         return false;
     }
 
-    public void DrawVisibleGeometry()
+    public void DrawVisibleGeometry(bool useDynamicBatching, bool useGPUInstancing)
     {
         //决定物体绘制顺序是正交排序还是基于深度排序的配置
         var sortingSettings = new SortingSettings(camera)
         {
             criteria = SortingCriteria.CommonOpaque
         };
-        var drawingSetting = new DrawingSettings(unlitShaderTagId, sortingSettings);
+        var drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings);
+
+        //增加对Lit.shader的绘制支持,index代表本次DrawRenderer中该pass的绘制优先级（0最先绘制）
+        drawingSettings.SetShaderPassName(1, litShaderTagId);
+
         var filteringSetting = new FilteringSettings(RenderQueueRange.opaque, -1, uint.MaxValue);
-        context.DrawRenderers(cullingResults, ref drawingSetting, ref filteringSetting);
+        context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSetting);
 
         context.DrawSkybox(camera);
 
         sortingSettings.criteria = SortingCriteria.CommonTransparent;
-        drawingSetting.sortingSettings = sortingSettings;
+        drawingSettings.sortingSettings = sortingSettings;
         filteringSetting.renderQueueRange = RenderQueueRange.transparent;
-        context.DrawRenderers(cullingResults, ref drawingSetting, ref filteringSetting);
+        context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSetting);
     }
 
     void SetUp()

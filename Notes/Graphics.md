@@ -1,0 +1,2 @@
+- #Normal #transform #Object_Space #World_Space Stop Using Normal Matrix: https://lxjk.github.io/2017/10/01/Stop-Using-Normal-Matrix.html
+    *Tips* :![20240213203944](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240213203944.png) The "M" should be "M<sup>'</sup>"
