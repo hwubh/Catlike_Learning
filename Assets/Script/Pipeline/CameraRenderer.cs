@@ -18,6 +18,8 @@ public partial class CameraRenderer
     static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
     static ShaderTagId litShaderTagId = new ShaderTagId("CustomLit");
 
+    Lighting lighting = new Lighting();
+
 #if UNITY_EDITOR
 #else
 	const string SampleName = bufferName;
@@ -41,6 +43,7 @@ public partial class CameraRenderer
         }
 
         SetUp();
+        lighting.Setup(context, cullingResults);
         DrawVisibleGeometry(useDynamicBatching, useGPUInstancing);
         DrawUnsupportedShaders();
         Submit();

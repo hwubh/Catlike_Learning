@@ -28,8 +28,10 @@ Shader "Custom RP/Unlit"
 
 				#pragma vertex UnlitPassVertex
 				#pragma fragment UnlitPassFragment
-				#include "UnlitPass.hlsl"
+				#include "ShaderLibrary/UnlitPass.hlsl"
 				ENDHLSL
 			}
 	}
+
+	CustomEditor "CustomShaderGUI"
 }
