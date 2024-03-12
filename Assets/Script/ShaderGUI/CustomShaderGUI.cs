@@ -14,6 +14,7 @@ public class CustomShaderGUI : ShaderGUI
 
     public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
     {
+        EditorGUI.BeginChangeCheck();
         //首先绘制材质Inspector下原本所有的GUI，例如材质的Properties等
         base.OnGUI(materialEditor, properties);
         //将editor、material、properties存储到字段中
@@ -32,6 +33,10 @@ public class CustomShaderGUI : ShaderGUI
             ClipPreset();
             FadePreset();
             TransparentPreset();
+        }
+        if (EditorGUI.EndChangeCheck())
+        {
+            SetShadowCasterPass();
         }
     }
 
@@ -122,6 +127,23 @@ public class CustomShaderGUI : ShaderGUI
         set => SetProperty("_ZWrite", value ? 1f : 0f);
     }
 
+    enum ShadowMode
+    {
+        On, Clip, Dither, Off
+    }
+
+    ShadowMode Shadows
+    {
+        set
+        {
+            if (SetProperty("_Shadows", (float)value))
+            {
+                SetKeyword("_SHADOWS_CLIP", value == ShadowMode.Clip);
+                SetKeyword("_SHADOWS_DITHER", value == ShadowMode.Dither);
+            }
+        }
+    }
+
     RenderQueue RenderQueue
     {
         set
@@ -210,6 +232,20 @@ public class CustomShaderGUI : ShaderGUI
             DstBlend = BlendMode.OneMinusSrcAlpha;
             ZWrite = false;
             RenderQueue = RenderQueue.Transparent;
+        }
+    }
+
+    void SetShadowCasterPass()
+    {
+        MaterialProperty shadows = FindProperty("_Shadows", properties, false);
+        if (shadows == null || shadows.hasMixedValue)
+        {
+            return;
+        }
+        bool enabled = shadows.floatValue < (float)ShadowMode.Off;
+        foreach (Material m in materials)
+        {
+            m.SetShaderPassEnabled("ShadowCaster", enabled);
         }
     }
 }

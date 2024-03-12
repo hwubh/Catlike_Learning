@@ -8,9 +8,12 @@ public class CustomRenderPipeline : RenderPipeline
     //批处理配置
     private bool useDynamicBatching, useGPUInstancing;
 
+    ShadowSettings shadowSettings;
+
     //构造函数，初始化管线的一些属性
-    public CustomRenderPipeline(bool useDynamicBatching, bool useGPUInstancing, bool useSRPBatcher)
+    public CustomRenderPipeline(bool useDynamicBatching, bool useGPUInstancing, bool useSRPBatcher, ShadowSettings shadowSettings)
     {
+        this.shadowSettings = shadowSettings;
         this.useDynamicBatching = useDynamicBatching;
         this.useGPUInstancing = useGPUInstancing;
         //配置SRP Batch
@@ -22,7 +25,7 @@ public class CustomRenderPipeline : RenderPipeline
     {
         foreach (Camera camera in cameras) 
         {
-			renderer.Render(context, camera, useDynamicBatching, useGPUInstancing);
+			renderer.Render(context, camera, useDynamicBatching, useGPUInstancing, shadowSettings);
 		}
     }
 }

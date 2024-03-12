@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -18,6 +19,10 @@ public partial class CameraRenderer
     static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
     static ShaderTagId litShaderTagId = new ShaderTagId("CustomLit");
 
+    	CommandBuffer buffer = new CommandBuffer {
+		name = bufferName
+	};
+
     Lighting lighting = new Lighting();
 
 #if UNITY_EDITOR
@@ -26,7 +31,7 @@ public partial class CameraRenderer
 #endif
 
     //摄像机渲染器的渲染函数，在当前渲染上下文的基础上渲染当前摄像机
-    public void Render(ScriptableRenderContext context, Camera camera, bool useDynamicBatching, bool useGPUInstancing)
+    public void Render(ScriptableRenderContext context, Camera camera, bool useDynamicBatching, bool useGPUInstancing, ShadowSettings shadowSettings)
     {
         this.context = context;
         this.camera = camera;
@@ -37,29 +42,36 @@ public partial class CameraRenderer
         DrawGizmos();
 #endif
 
-        if (!Cull())
+        if (!Cull(shadowSettings.maxDistance))
         {
             return;
         }
 
+        cmd.BeginSample(SampleName);
+        ExecuteBuffer();
+        lighting.Setup(context, cullingResults, shadowSettings);
+        cmd.EndSample(SampleName);
         SetUp();
-        lighting.Setup(context, cullingResults);
         DrawVisibleGeometry(useDynamicBatching, useGPUInstancing);
         DrawUnsupportedShaders();
+        lighting.Cleanup();
         Submit();
     }
 
-    bool Cull()
+    bool Cull(float maxShadowDistance)
     {
         //获取摄像机用于剔除的参数
         if (camera.TryGetCullingParameters(out ScriptableCullingParameters p))
         {
+            //实际shadowDistance取maxShadowDistance和camera.farClipPlane中较小值
+            p.shadowDistance = Mathf.Min(maxShadowDistance, camera.farClipPlane);
             cullingResults = context.Cull(ref p);
             return true;
         }
 
         return false;
     }
+
 
     public void DrawVisibleGeometry(bool useDynamicBatching, bool useGPUInstancing)
     {
