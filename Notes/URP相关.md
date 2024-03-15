@@ -9,3 +9,4 @@
 - 7：在Pass的Execute阶段最好不要使用Graphic 与GameObject提供的接口，可能会与CommandBuffer的命令产生时序问题。
 - 8：URP pass，先统一调用一次Init， 在调用所有的Setup，最后是所有Execute阶段，Execute是实质的运行阶段（绘制）阶段。
 - 9：URP 中，unity内存的cbuffer就占据了7个动态的标识符（非Instancing 的少一个），对于一些maxDescriptorSetUniformBuffersDynamic 为 8 芯片（如Andreno 512以下）的机型，Shader只可以自己定义1~2Cbuffer, 否则（不改动源码的情况下）该shader会被直接抛弃。
+- 10：The light map UV are provided via the second texture coordinates channel so we need to use the TEXCOORD1 semantic in Attributes.

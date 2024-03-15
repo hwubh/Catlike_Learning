@@ -10,6 +10,9 @@ float4x4 unity_WorldToObject;
 //如果不加这个unity_LODFade，不能支持SRP Batcher
 float4 unity_LODFade;
 real4 unity_WorldTransformParams;
+
+float4 unity_LightmapST;
+float4 unity_DynamicLightmapST;
 CBUFFER_END
 
 float4x4 unity_MatrixVP;

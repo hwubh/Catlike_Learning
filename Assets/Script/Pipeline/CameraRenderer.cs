@@ -80,7 +80,12 @@ public partial class CameraRenderer
         {
             criteria = SortingCriteria.CommonOpaque
         };
-        var drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings);
+        var drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings)
+        {
+            enableDynamicBatching = useDynamicBatching,
+            enableInstancing = useGPUInstancing,
+            perObjectData = PerObjectData.Lightmaps
+        };
 
         //增加对Lit.shader的绘制支持,index代表本次DrawRenderer中该pass的绘制优先级（0最先绘制）
         drawingSettings.SetShaderPassName(1, litShaderTagId);

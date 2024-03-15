@@ -26,6 +26,19 @@ struct Varyings
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
+float2 TransformBaseUV(float2 baseUV)
+{
+    float4 baseST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseMap_ST);
+    return baseUV * baseST.xy + baseST.zw;
+}
+
+float4 GetBase(float2 baseUV)
+{
+    float4 map = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, baseUV);
+    float4 color = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
+    return map * color;
+}
+
 Varyings ShadowCasterPassVertex(Attributes input)
 {
     Varyings output;
@@ -34,19 +47,27 @@ Varyings ShadowCasterPassVertex(Attributes input)
     float3 positionWS = TransformObjectToWorld(input.positionOS);
     output.positionCS = TransformWorldToHClip(positionWS);
 
-    float4 baseST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseMap_ST);
-    output.baseUV = input.baseUV * baseST.xy + baseST.zw;
+#if UNITY_REVERSED_Z
+		output.positionCS.z =
+			min(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
+#else
+    output.positionCS.z =
+			max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
+#endif
+
+    output.baseUV = TransformBaseUV(input.baseUV);
     return output;
 }
 
 void ShadowCasterPassFragment(Varyings input)
 {
     UNITY_SETUP_INSTANCE_ID(input);
-    float4 baseMap = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.baseUV);
-    float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
-    float4 base = baseMap * baseColor;
-#if defined(_CLIPPING)
-		clip(base.a - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Cutoff));
+    float4 base = GetBase(input.baseUV);
+#if defined(_SHADOWS_CLIP)
+		clip(base.a - GetCutoff(input.baseUV));
+#elif defined(_SHADOWS_DITHER)
+		float dither = InterleavedGradientNoise(input.positionCS.xy, 0);
+		clip(base.a - dither);
 #endif
 }
 
