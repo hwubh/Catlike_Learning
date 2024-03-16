@@ -1,4 +1,4 @@
-//定义BRDF函数需要传入的参数
+﻿//定义BRDF函数需要传入的参数
 #ifndef CUSTOM_BRDF_INCLUDED
 #define CUSTOM_BRDF_INCLUDED
 

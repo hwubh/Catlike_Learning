@@ -9,19 +9,6 @@
 //float4 _BaseColor;
 //CBUFFER_END
 
-//在Shader的全局变量区定义纹理的句柄和其采样器，通过名字来匹配
-TEXTURE2D(_BaseMap);
-SAMPLER(sampler_BaseMap);
-
-UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
-    //纹理坐标的偏移和缩放可以是每实例数据
-    UNITY_DEFINE_INSTANCED_PROP(float4,_BaseMap_ST)
-    //_BaseColor在数组中的定义格式
-    UNITY_DEFINE_INSTANCED_PROP(float4,_BaseColor)
-    //AlphaClip的范围
-    UNITY_DEFINE_INSTANCED_PROP(float, _Cutoff)
-UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
-
 //使用结构体定义顶点着色器的输入，一个是为了代码更整洁，一个是为了支持GPU Instancing（获取object的index）
 struct Attributes
 {

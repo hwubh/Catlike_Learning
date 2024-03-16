@@ -27,6 +27,10 @@ Shader "Custom RP/Lit"
 
 	SubShader
 	{
+		HLSLINCLUDE
+		#include "ShaderLibrary/CustomCommon.hlsl"
+		#include "ShaderLibrary/LitInput.hlsl"
+		ENDHLSL
 
 		Pass {
 			Tags {
@@ -72,6 +76,21 @@ Shader "Custom RP/Lit"
 				#include "ShaderLibrary/LitPass.hlsl"
 				ENDHLSL
 			}
+
+		Pass {
+			Tags {
+				"LightMode" = "Meta"
+			}
+
+			Cull Off
+
+			HLSLPROGRAM
+			#pragma target 3.5
+			#pragma vertex MetaPassVertex
+			#pragma fragment MetaPassFragment
+			#include "ShaderLibrary/MetaPass.hlsl"
+			ENDHLSL
+		}
 	}
 
 	//告诉Unity编辑器使用CustomShaderGUI类的一个实例来为使用Lit.shader的材质绘制Inspector窗口

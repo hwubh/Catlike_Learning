@@ -4,7 +4,7 @@ Shader "Custom RP/Unlit"
 	{
 		//"white"为默认纯白贴图，{}在很久之前用于纹理的设置
         _BaseMap("Texture", 2D) = "white"{}
-		_BaseColor("Color",Color) = (1.0,1.0,1.0,1.0)
+		[HDR] _BaseColor("Color",Color) = (1.0,1.0,1.0,1.0)
 		[Toggle(_CLIPPING)] _Clipping ("Alpha Clipping", Float) = 0
 		_Cutoff ("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
 		//混合模式使用的值，其值应该是枚举值，但是这里使用float
@@ -17,6 +17,11 @@ Shader "Custom RP/Unlit"
 
 	SubShader
 	{
+		HLSLINCLUDE
+		#include "ShaderLibrary/CustomCommon.hlsl"
+		#include "ShaderLibrary/UnlitInput.hlsl"
+		ENDHLSL
+
 		Pass {
 				//设置混合模式
 				Blend [_SrcBlend] [_DstBlend]

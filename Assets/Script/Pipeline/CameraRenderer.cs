@@ -36,12 +36,8 @@ public partial class CameraRenderer
         this.context = context;
         this.camera = camera;
 
-#if UNITY_EDITOR
         PrepareBuffer(cmd);
         PrepareForSceneWindow();
-        DrawGizmos();
-#endif
-
         if (!Cull(shadowSettings.maxDistance))
         {
             return;
@@ -54,6 +50,7 @@ public partial class CameraRenderer
         SetUp();
         DrawVisibleGeometry(useDynamicBatching, useGPUInstancing);
         DrawUnsupportedShaders();
+        DrawGizmos();
         lighting.Cleanup();
         Submit();
     }
@@ -84,7 +81,7 @@ public partial class CameraRenderer
         {
             enableDynamicBatching = useDynamicBatching,
             enableInstancing = useGPUInstancing,
-            perObjectData = PerObjectData.Lightmaps
+            perObjectData = PerObjectData.Lightmaps | PerObjectData.LightProbe | PerObjectData.LightProbeProxyVolume
         };
 
         //增加对Lit.shader的绘制支持,index代表本次DrawRenderer中该pass的绘制优先级（0最先绘制）

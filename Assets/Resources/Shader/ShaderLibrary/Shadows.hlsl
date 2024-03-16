@@ -1,4 +1,4 @@
-//用来采样阴影贴图
+﻿//用来采样阴影贴图
 #ifndef CUSTOM_SHADOWS_INCLUDED
 #define CUSTOM_SHADOWS_INCLUDED
 

@@ -1,4 +1,4 @@
-//用来定义光源属性
+﻿//用来定义光源属性
 #ifndef CUSTOM_LIGHT_INCLUDED
 #define CUSTOM_LIGHT_INCLUDED
 
