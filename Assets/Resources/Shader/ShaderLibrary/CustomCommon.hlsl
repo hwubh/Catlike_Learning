@@ -14,6 +14,10 @@
 #define UNITY_PREV_MATRIX_M unity_prev_MatrixM
 #define UNITY_PREV_MATRIX_I_M unity_prev_MatrixIM
 #define UNITY_MATRIX_P glstate_matrix_projection
+//Avoid breaking GPUInstancing
+#if defined(_SHADOW_MASK_ALWAYS) || defined(_SHADOW_MASK_DISTANCE)
+	#define SHADOWS_SHADOWMASK
+#endif
 //我们直接使用SRP库中已经帮我们写好的函数
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityInstancing.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
