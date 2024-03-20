@@ -10,6 +10,10 @@ struct BRDF
     float3 specular;
     //物体表面粗糙度
     float3 roughness;
+    //1-surface.smoothness
+    float perceptualRoughness;
+    
+    float fresnel;
 };
 
 //宏定义最小高光反射率
@@ -39,9 +43,11 @@ BRDF GetBRDF(Surface surface, bool applyAlphaToDiffuse = false)
     brdf.specular = lerp(MIN_REFLECTIVITY, surface.color, surface.metallic);
     //先根据surface.smoothness计算出感知粗糙度，再将感知粗糙度转为实际粗糙度
     //PerceptualSmoothnessToPerceptualRoughness返回值就是(1-surface.smoothness)
-    float perceptualRoughness = PerceptualSmoothnessToPerceptualRoughness(surface.smoothness);
+    brdf.perceptualRoughness = PerceptualSmoothnessToPerceptualRoughness(surface.smoothness);
     //PerceptualRoughnessToRoughness返回的就是perceptualRoughness的平方
-    brdf.roughness = PerceptualRoughnessToRoughness(perceptualRoughness);
+    brdf.roughness = PerceptualRoughnessToRoughness(brdf.perceptualRoughness);
+    
+    brdf.fresnel = saturate(surface.smoothness + 1.0 - oneMinusReflectivity);
     return brdf;
 }
 

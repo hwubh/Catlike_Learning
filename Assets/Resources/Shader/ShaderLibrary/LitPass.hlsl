@@ -71,6 +71,9 @@ float4 LitPassFragment(Varyings input) : SV_TARGET
 {
     //从input中提取实例的ID并将其存储在其他实例化宏所依赖的全局静态变量中
     UNITY_SETUP_INSTANCE_ID(input);
+    
+    ClipLOD(input.positionCS.xy, unity_LODFade.x);
+    
     float4 base = GetBase(input.baseUV);
 
     //只有在_CLIPPING关键字启用时编译该段代码
@@ -89,13 +92,14 @@ float4 LitPassFragment(Varyings input) : SV_TARGET
     surface.metallic = GetMetallic(input.baseUV);
     surface.smoothness = GetSmoothness(input.baseUV);
     surface.dither = InterleavedGradientNoise(input.positionCS.xy, 0);
+    surface.fresnelStrength = GetFresnel(input.baseUV);
 	
 #if defined(_PREMULTIPLY_ALPHA)
 		BRDF brdf = GetBRDF(surface, true);
 #else
     BRDF brdf = GetBRDF(surface);
 #endif
-    GI gi = GetGI(GI_FRAGMENT_DATA(input), surface);
+    GI gi = GetGI(GI_FRAGMENT_DATA(input), surface, brdf);
     float3 color = GetLighting(surface, brdf, gi);
     color += GetEmission(input.baseUV);
     return float4(color, surface.alpha);

@@ -12,6 +12,8 @@ float4 unity_LODFade;
 real4 unity_WorldTransformParams;
 //采样 Shadowmask
 float4 unity_ProbesOcclusion;
+
+float4 unity_SpecCube0_HDR;
 //采样 Lightmap
 float4 unity_LightmapST;
 float4 unity_DynamicLightmapST;
