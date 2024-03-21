@@ -145,14 +145,14 @@ float FilterDirectionalShadow(float3 positionSTS)
 
 float GetCascadedShadow(DirectionalShadowData directional, ShadowData global, Surface surfaceWS)
 {
-    float3 normalBias = surfaceWS.normal * (directional.normalBias * _CascadeData[global.cascadeIndex].y);
+    float3 normalBias = surfaceWS.interpolatedNormal * (directional.normalBias * _CascadeData[global.cascadeIndex].y);
     //根据对应Tile阴影变换矩阵和片元的世界坐标计算Tile上的像素坐标STS
     float3 positionSTS = mul( _DirectionalShadowMatrices[directional.tileIndex], float4(surfaceWS.position + normalBias, 1.0)).xyz;
     //采样Tile得到阴影强度值
     float shadow = FilterDirectionalShadow(positionSTS);
     if (global.cascadeBlend < 1.0)
     {
-        normalBias = surfaceWS.normal * (directional.normalBias * _CascadeData[global.cascadeIndex + 1].y);
+        normalBias = surfaceWS.interpolatedNormal * (directional.normalBias * _CascadeData[global.cascadeIndex + 1].y);
         positionSTS = mul( _DirectionalShadowMatrices[directional.tileIndex + 1], float4(surfaceWS.position + normalBias, 1.0)).xyz;
         shadow = lerp( FilterDirectionalShadow(positionSTS), shadow, global.cascadeBlend);
     }

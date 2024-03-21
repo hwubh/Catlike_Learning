@@ -4,6 +4,7 @@
 struct Surface {
 	float3 position;
 	float3 normal;
+    float3 interpolatedNormal;
 	float3 viewDirection;
 	float depth;
 	float3 color;
@@ -12,6 +13,7 @@ struct Surface {
 	float smoothness;
 	float dither;
     float fresnelStrength;
+    float occlusion;
 };
 
 #endif

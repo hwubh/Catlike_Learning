@@ -20,6 +20,7 @@ struct Attributes
     float3 positionOS : POSITION;
     //顶点法线信息，用于光照计算，OS代表Object Space，即模型空间
     float3 normalOS : NORMAL;
+    float4 tangentOS : TANGENT;
     float2 baseUV : TEXCOORD0;
     GI_ATTRIBUTE_DATA
     //定义GPU Instancing使用的每个实例的ID，告诉GPU当前绘制的是哪个Object
@@ -34,7 +35,11 @@ struct Varyings
     //世界空间下的法线信息
     float3 normalWS : VAR_NORMAL;
     float2 baseUV : VAR_BASE_UV;
+    float2 detailUV : VAR_DETAIL_UV;
     float3 positionWS : VAR_POSITION;
+#if defined(_NORMAL_MAP)
+    float4 tangentWS : VAR_TANGENT;
+#endif
     GI_VARYINGS_DATA
     //定义每一个片元对应的object的唯一ID
     UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -61,8 +66,13 @@ Varyings LitPassVertex(Attributes input)
 	#endif
     //使用TransformObjectToWorldNormal将法线从模型空间转换到世界空间，注意不能使用TransformObjectToWorld
     output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+#if defined(_NORMAL_MAP)
+    output.tangentWS = float4(TransformObjectToWorldDir(input.tangentOS.xyz), input.tangentOS.w);
+#endif
     //应用纹理ST变换
     output.baseUV = TransformBaseUV(input.baseUV);
+    //Detail纹理ST变换
+    output.detailUV = TransformDetailUV(input.baseUV);
     return output;
 }
 
@@ -74,25 +84,36 @@ float4 LitPassFragment(Varyings input) : SV_TARGET
     
     ClipLOD(input.positionCS.xy, unity_LODFade.x);
     
-    float4 base = GetBase(input.baseUV);
+    InputConfig config = GetInputConfig(input.baseUV, input.detailUV);
+#if defined(_MASK_MAP)
+	config.useMask = true;
+#endif
+    float4 base = GetBase(config);
 
     //只有在_CLIPPING关键字启用时编译该段代码
-	#if defined(_CLIPPING)
-		clip(base.a - GetCutoff(input.baseUV));
-	#endif
+#if defined(_CLIPPING)
+	clip(base.a - GetCutoff(config));
+#endif
 
     //在片元着色器中构建Surface结构体，即物体表面属性，构建完成之后就可以在片元着色器中计算光照
     Surface surface;
     surface.position = input.positionWS;
+#if defined(_NORMAL_MAP)
+    surface.normal = NormalTangentToWorld(GetNormalTS(config), input.normalWS, input.tangentWS);
+#else
     surface.normal = normalize(input.normalWS);
+    surface.interpolatedNormal = surface.normal;
+#endif
+    surface.interpolatedNormal = input.normalWS;
     surface.viewDirection = normalize(_WorldSpaceCameraPos - input.positionWS);
     surface.depth = -TransformWorldToView(input.positionWS).z;
     surface.color = base.rgb;
     surface.alpha = base.a;
-    surface.metallic = GetMetallic(input.baseUV);
-    surface.smoothness = GetSmoothness(input.baseUV);
+    surface.metallic = GetMetallic(config);
+    surface.smoothness = GetSmoothness(config);
     surface.dither = InterleavedGradientNoise(input.positionCS.xy, 0);
-    surface.fresnelStrength = GetFresnel(input.baseUV);
+    surface.fresnelStrength = GetFresnel(config);
+    surface.occlusion = GetOcclusion(config);
 	
 #if defined(_PREMULTIPLY_ALPHA)
 		BRDF brdf = GetBRDF(surface, true);
@@ -101,7 +122,7 @@ float4 LitPassFragment(Varyings input) : SV_TARGET
 #endif
     GI gi = GetGI(GI_FRAGMENT_DATA(input), surface, brdf);
     float3 color = GetLighting(surface, brdf, gi);
-    color += GetEmission(input.baseUV);
+    color += GetEmission(config);
     return float4(color, surface.alpha);
 }
 

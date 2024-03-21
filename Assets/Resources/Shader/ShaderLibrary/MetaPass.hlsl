@@ -22,6 +22,7 @@ struct Varyings
 {
     float4 positionCS : SV_POSITION;
     float2 baseUV : VAR_BASE_UV;
+    float2 detailUV : VAR_DETAIL_UV;
 };
 
 Varyings MetaPassVertex(Attributes input)
@@ -31,17 +32,29 @@ Varyings MetaPassVertex(Attributes input)
     input.positionOS.z = input.positionOS.z > 0.0 ? FLT_MIN : 0.0;
     output.positionCS = TransformWorldToHClip(input.positionOS);;
     output.baseUV = TransformBaseUV(input.baseUV);
+    //DetailŒ∆¿ÌST±‰ªª
+#if defined(_DETAIL_MAP)
+	output.detailUV = TransformDetailUV(input.baseUV);
+#endif
     return output;
 }
 
 float4 MetaPassFragment(Varyings input) : SV_TARGET
 {
-    float4 base = GetBase(input.baseUV);
+    InputConfig config = GetInputConfig(input.baseUV);
+#if defined(_MASK_MAP)
+	config.useMask = true;
+#endif
+#if defined(_DETAIL_MAP)
+	config.detailUV = input.detailUV;
+	config.useDetail = true;
+#endif
+    float4 base = GetBase(config);
     Surface surface;
     ZERO_INITIALIZE(Surface, surface);
     surface.color = base.rgb;
-    surface.metallic = GetMetallic(input.baseUV);
-    surface.smoothness = GetSmoothness(input.baseUV);
+    surface.metallic = GetMetallic(config);
+    surface.smoothness = GetSmoothness(config);
     BRDF brdf = GetBRDF(surface);
     float4 meta = 0.0;
     if (unity_MetaFragmentControl.x)
@@ -52,7 +65,7 @@ float4 MetaPassFragment(Varyings input) : SV_TARGET
     }
     else if (unity_MetaFragmentControl.y)
     {
-        meta = float4(GetEmission(input.baseUV), 1.0);
+        meta = float4(GetEmission(config), 1.0);
     }
     
     return meta;

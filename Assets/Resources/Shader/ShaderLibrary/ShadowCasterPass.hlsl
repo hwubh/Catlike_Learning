@@ -12,6 +12,7 @@ struct Varyings
 {
     float4 positionCS : SV_POSITION;
     float2 baseUV : VAR_BASE_UV;
+    float2 detailUV : VAR_DETAIL_UV;
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -32,13 +33,19 @@ Varyings ShadowCasterPassVertex(Attributes input)
 #endif
 
     output.baseUV = TransformBaseUV(input.baseUV);
+    //DetailŒ∆¿ÌST±‰ªª
+    output.detailUV = TransformDetailUV(input.baseUV);
     return output;
 }
 
 void ShadowCasterPassFragment(Varyings input)
 {
     UNITY_SETUP_INSTANCE_ID(input);
-    float4 base = GetBase(input.baseUV);
+    InputConfig config = GetInputConfig(input.baseUV, input.detailUV);
+#if defined(_MASK_MAP)
+		config.useMask = true;
+#endif
+    float4 base = GetBase(config);
 #if defined(_SHADOWS_CLIP)
 		clip(base.a - GetCutoff(input.baseUV));
 #elif defined(_SHADOWS_DITHER)
