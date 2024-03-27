@@ -4,15 +4,23 @@
 
 //使用宏定义最大方向光源数，需要与cpu端匹配
 #define MAX_DIRECTIONAL_LIGHT_COUNT 4
+#define MAX_OTHER_LIGHT_COUNT 64
 
 //用CBuffer包裹构造方向光源的两个属性，cpu会每帧传递（修改）这两个属性到GPU的常量缓冲区，对于一次渲染过程这两个值恒定
 CBUFFER_START(_CustomLight)
     //当前有效光源数
-int _DirectionalLightCount;
+    int _DirectionalLightCount;
     //注意CBUFFER中创建数组的格式,在Shader中数组在创建时必须明确其长度，创建完毕后不允许修改
-float4 _DirectionalLightColors[MAX_DIRECTIONAL_LIGHT_COUNT];
-float4 _DirectionalLightDirections[MAX_DIRECTIONAL_LIGHT_COUNT];
-float4 _DirectionalLightShadowData[MAX_DIRECTIONAL_LIGHT_COUNT];
+    float4 _DirectionalLightColors[MAX_DIRECTIONAL_LIGHT_COUNT];
+    float4 _DirectionalLightDirections[MAX_DIRECTIONAL_LIGHT_COUNT];
+    float4 _DirectionalLightShadowData[MAX_DIRECTIONAL_LIGHT_COUNT];
+
+    int _OtherLightCount;
+    float4 _OtherLightColors[MAX_OTHER_LIGHT_COUNT];
+    float4 _OtherLightPositions[MAX_OTHER_LIGHT_COUNT];
+    float4 _OtherLightDirections[MAX_OTHER_LIGHT_COUNT];
+    float4 _OtherLightSpotAngles[MAX_OTHER_LIGHT_COUNT];
+    float4 _OtherLightShadowData[MAX_OTHER_LIGHT_COUNT];
 CBUFFER_END
 
 struct Light
@@ -30,12 +38,40 @@ int GetDirectionalLightCount()
     return _DirectionalLightCount;
 }
 
+int GetOtherLightCount()
+{
+    return _OtherLightCount;
+}
+
 //返回一个方向光源，其颜色与方向取自常量缓冲区，cpu每帧会对该缓冲区赋值或修改
 Light GetDirectionalLight(int index)
 {
     Light light;
     light.color = _DirectionalLightColors[index].rgb;
     light.direction = _DirectionalLightDirections[index].xyz;
+    return light;
+}
+
+OtherShadowData GetOtherShadowData(int lightIndex)
+{
+    OtherShadowData data;
+    data.strength = _OtherLightShadowData[lightIndex].x;
+    data.shadowMaskChannel = _OtherLightShadowData[lightIndex].w;
+    return data;
+}
+
+Light GetOtherLight(int index, Surface surfaceWS, ShadowData shadowData)
+{
+    Light light;
+    light.color = _OtherLightColors[index].rgb;
+    float3 ray = _OtherLightPositions[index].xyz - surfaceWS.position;
+    light.direction = normalize(ray);
+    float distanceSqr = max(dot(ray, ray), 0.00001);
+    float rangeAttenuation = Square(saturate(1.0 - Square(distanceSqr * _OtherLightPositions[index].w)));
+    float4 spotAngles = _OtherLightSpotAngles[index];
+    float spotAttenuation = Square(saturate(dot(_OtherLightDirections[index].xyz, light.direction) * spotAngles.x + spotAngles.y));
+    OtherShadowData otherShadowData = GetOtherShadowData(index);
+    light.attenuation = GetOtherShadowAttenuation(otherShadowData, shadowData, surfaceWS) * spotAttenuation * rangeAttenuation / distanceSqr;
     return light;
 }
 

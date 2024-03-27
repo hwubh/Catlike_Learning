@@ -1,23 +1,25 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class CustomRenderPipeline : RenderPipeline
+public partial class CustomRenderPipeline : RenderPipeline
 {
 	CameraRenderer renderer = new CameraRenderer();
 
     //批处理配置
-    private bool useDynamicBatching, useGPUInstancing;
+    private bool useDynamicBatching, useGPUInstancing, useLightsPerObject;
 
     ShadowSettings shadowSettings;
 
     //构造函数，初始化管线的一些属性
-    public CustomRenderPipeline(bool useDynamicBatching, bool useGPUInstancing, bool useSRPBatcher, ShadowSettings shadowSettings)
+    public CustomRenderPipeline(bool useDynamicBatching, bool useGPUInstancing, bool useSRPBatcher, bool useLightsPerObject, ShadowSettings shadowSettings)
     {
         this.shadowSettings = shadowSettings;
         this.useDynamicBatching = useDynamicBatching;
         this.useGPUInstancing = useGPUInstancing;
+        this.useLightsPerObject = useLightsPerObject;
         //配置SRP Batch
         GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBatcher;
+        InitializeForEditor();
     }
 
     //必须重写Render函数，目前函数内部什么都不执行
@@ -25,7 +27,7 @@ public class CustomRenderPipeline : RenderPipeline
     {
         foreach (Camera camera in cameras) 
         {
-			renderer.Render(context, camera, useDynamicBatching, useGPUInstancing, shadowSettings);
+			renderer.Render(context, camera, useDynamicBatching, useGPUInstancing, useLightsPerObject, shadowSettings);
 		}
     }
 }

@@ -10,6 +10,9 @@ float4x4 unity_WorldToObject;
 //如果不加这个unity_LODFade，不能支持SRP Batcher
 float4 unity_LODFade;
 real4 unity_WorldTransformParams;
+
+real4 unity_LightData;
+real4 unity_LightIndices[2];
 //采样 Shadowmask
 float4 unity_ProbesOcclusion;
 
