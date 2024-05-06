@@ -15,13 +15,26 @@
 	#define DIRECTIONAL_FILTER_SETUP SampleShadow_ComputeSamples_Tent_7x7
 #endif
 
+#if defined(_OTHER_PCF3)
+	#define OTHER_FILTER_SAMPLES 4
+	#define OTHER_FILTER_SETUP SampleShadow_ComputeSamples_Tent_3x3
+#elif defined(_OTHER_PCF5)
+	#define OTHER_FILTER_SAMPLES 9
+	#define OTHER_FILTER_SETUP SampleShadow_ComputeSamples_Tent_5x5
+#elif defined(_OTHER_PCF7)
+	#define OTHER_FILTER_SAMPLES 16
+	#define OTHER_FILTER_SETUP SampleShadow_ComputeSamples_Tent_7x7
+#endif
+
 //宏定义最大支持阴影的方向光源数，要与CPU端同步，为4
 #define MAX_SHADOWED_DIRECTIONAL_LIGHT_COUNT 4
+#define MAX_SHADOWED_OTHER_LIGHT_COUNT 16
 #define MAX_CASCADE_COUNT 4
 
 //接收CPU端传来的ShadowAtlas
 //使用TEXTURE2D_SHADOW来明确我们接收的是阴影贴图
 TEXTURE2D_SHADOW(_DirectionalShadowAtlas);
+TEXTURE2D_SHADOW(_OtherShadowAtlas);
 //阴影贴图只有一种采样方式，因此我们显式定义一个阴影采样器状态（不需要依赖任何纹理），其名字为sampler_linear_clamp_compare(使用宏定义它为SHADOW_SAMPLER)
 //由此，对于任何阴影贴图，我们都可以使用SHADOW_SAMPLER这个采样器状态
 //sampler_linear_clamp_compare这个取名十分有讲究，Unity会将这个名字翻译成使用Linear过滤、Clamp包裹的用于深度比较的采样器
@@ -33,6 +46,8 @@ CBUFFER_START(_CustonShadows)
 	int _CascadeCount;
 	float4 _CascadeCullingSpheres[MAX_CASCADE_COUNT];
     float4x4 _DirectionalShadowMatrices[MAX_SHADOWED_DIRECTIONAL_LIGHT_COUNT * MAX_CASCADE_COUNT];
+    float4x4 _OtherShadowMatrices[MAX_SHADOWED_OTHER_LIGHT_COUNT];
+    float4 _OtherShadowTiles[MAX_SHADOWED_OTHER_LIGHT_COUNT];
     float4 _ShadowDistanceFade;
     float4 _CascadeData[MAX_CASCADE_COUNT];
     float4 _ShadowAtlasSize;
@@ -45,6 +60,17 @@ struct DirectionalShadowData
     int tileIndex;
     float normalBias;
     int shadowMaskChannel;
+};
+
+struct OtherShadowData
+{
+    float strength;
+    int tileIndex;
+    bool isPoint;
+    int shadowMaskChannel;
+    float3 lightPositionWS;
+    float3 lightDirectionWS;
+    float3 spotDirectionWS;
 };
 
 struct ShadowMask
@@ -60,12 +86,6 @@ struct ShadowData
     float cascadeBlend;
     float strength;
     ShadowMask shadowMask;
-};
-
-struct OtherShadowData
-{
-    float strength;
-    int shadowMaskChannel;
 };
 
 float FadedShadowStrength(float distance, float scale, float fade)
@@ -105,7 +125,7 @@ ShadowData GetShadowData (Surface surfaceWS)
         }
     }
     
-    if (i == _CascadeCount)
+    if (i == _CascadeCount && _CascadeCount > 0)
     {
         data.strength = 0.0;
     }
@@ -130,22 +150,43 @@ float SampleDirectionalShadowAtlas(float3 positionSTS)
     return SAMPLE_TEXTURE2D_SHADOW(_DirectionalShadowAtlas, SHADOW_SAMPLER, positionSTS);
 }
 
+float SampleOtherShadowAtlas(float3 positionSTS, float3 bounds)
+{
+    positionSTS.xy = clamp(positionSTS.xy, bounds.xy, bounds.xy + bounds.z);
+    return SAMPLE_TEXTURE2D_SHADOW(_OtherShadowAtlas, SHADOW_SAMPLER, positionSTS);
+}
+
 float FilterDirectionalShadow(float3 positionSTS)
 {
 #if defined(DIRECTIONAL_FILTER_SETUP)
-		float weights[DIRECTIONAL_FILTER_SAMPLES];
-		float2 positions[DIRECTIONAL_FILTER_SAMPLES];
-		float4 size = _ShadowAtlasSize.yyxx;
-		DIRECTIONAL_FILTER_SETUP(size, positionSTS.xy, weights, positions);
-		float shadow = 0;
-		for (int i = 0; i < DIRECTIONAL_FILTER_SAMPLES; i++) {
-			shadow += weights[i] * SampleDirectionalShadowAtlas(
-				float3(positions[i].xy, positionSTS.z)
-			);
-		}
-		return shadow;
+	float weights[DIRECTIONAL_FILTER_SAMPLES];
+	float2 positions[DIRECTIONAL_FILTER_SAMPLES];
+	float4 size = _ShadowAtlasSize.yyxx;
+	DIRECTIONAL_FILTER_SETUP(size, positionSTS.xy, weights, positions);
+	float shadow = 0;
+	for (int i = 0; i < DIRECTIONAL_FILTER_SAMPLES; i++) {
+		shadow += weights[i] * SampleDirectionalShadowAtlas(float3(positions[i].xy, positionSTS.z));
+	}
+	return shadow;
 #else
     return SampleDirectionalShadowAtlas(positionSTS);
+#endif
+}
+
+float FilterOtherShadow(float3 positionSTS, float3 bounds)
+{
+#if defined(OTHER_FILTER_SETUP)
+	float weights[DIRECTIONAL_FILTER_SAMPLES];
+	float2 positions[DIRECTIONAL_FILTER_SAMPLES];
+	float4 size = _ShadowAtlasSize.wwzz;
+	OTHER_FILTER_SETUP(size, positionSTS.xy, weights, positions);
+	float shadow = 0;
+	for (int i = 0; i < OTHER_FILTER_SAMPLES; i++) {
+		shadow += weights[i] * SampleOtherShadowAtlas(float3(positions[i].xy, positionSTS.z), bounds);
+	}
+	return shadow;
+#else
+    return SampleOtherShadowAtlas(positionSTS, bounds);
 #endif
 }
 
@@ -227,6 +268,35 @@ float GetDirectionalShadowAttenuation(DirectionalShadowData directional, ShadowD
     return shadow;
 }
 
+static const float3 pointShadowPlanes[6] =
+{
+    float3(-1.0, 0.0, 0.0),
+	float3(1.0, 0.0, 0.0),
+	float3(0.0, -1.0, 0.0),
+	float3(0.0, 1.0, 0.0),
+	float3(0.0, 0.0, -1.0),
+	float3(0.0, 0.0, 1.0)
+};
+
+float GetOtherShadow(OtherShadowData other, ShadowData global, Surface surfaceWS)
+{
+    float tileIndex = other.tileIndex;
+    float3 lightPlane = other.spotDirectionWS;
+    if (other.isPoint)
+    {
+        float faceOffset = CubeMapFaceID(-other.lightDirectionWS);
+        tileIndex += faceOffset;
+        lightPlane = pointShadowPlanes[faceOffset];
+    }
+    float4 tileData = _OtherShadowTiles[tileIndex];
+    float3 surfaceToLight = other.lightPositionWS - surfaceWS.position;
+    float distanceToLightPlane = dot(surfaceToLight, lightPlane);
+    float3 normalBias = surfaceWS.interpolatedNormal * (distanceToLightPlane * tileData.w);
+    float4 positionSTS = mul(_OtherShadowMatrices[tileIndex], 
+                         float4(surfaceWS.position + normalBias, 1.0));
+    return FilterOtherShadow(positionSTS.xyz / positionSTS.w, tileData.xyz);
+}
+
 float GetOtherShadowAttenuation(
 	OtherShadowData other, ShadowData global, Surface surfaceWS
 )
@@ -236,13 +306,14 @@ float GetOtherShadowAttenuation(
 #endif
 	
     float shadow;
-    if (other.strength > 0.0)
+    if (other.strength * global.strength <= 0.0)
     {
-        shadow = GetBakedShadow(global.shadowMask, other.shadowMaskChannel, other.strength);
+        shadow = GetBakedShadow( global.shadowMask, other.shadowMaskChannel, abs(other.strength));
     }
     else
     {
-        shadow = 1.0;
+        shadow = GetOtherShadow(other, global, surfaceWS);
+        shadow = MixBakedAndRealtimeShadows( global, shadow, other.shadowMaskChannel, other.strength);
     }
     return shadow;
 }

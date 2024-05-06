@@ -57,6 +57,20 @@ public class ShadowSettings
         public CascadeBlendMode cascadeBlend;
     }
 
+    //定义非方向光源的阴影贴图配置
+    [System.Serializable]
+    public struct Other
+    {
+        public TextureSize atlasSize;
+        public FilterMode filter;
+    }
+
+    public Other other = new Other
+    {
+        atlasSize = TextureSize._1024,
+        filter = FilterMode.PCF2x2
+    };
+
     //创建一个1024大小的Directional Shadow Map
     public Directional directional = new Directional()
     {
