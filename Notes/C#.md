@@ -1,0 +1,20 @@
+- Reflection: 
+- Assembly： 程序集以 .exe 或 .dll 文件的形式实现（PE格式） ![20240508210000](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240508210000.png)
+  - Assembly and Namespace ： https://github.com/hnscdg/gitbook/issues/17
+  - 命名空间用于对类型进行逻辑分组。程序集则是程序的物理分组，对应于一个dll或exe文件
+  - ![20240508210908](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240508210908.png)
+  - ![20240508211240](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240508211240.png)
+  - 命名空间的设计目的是提供一种让一组名称与其他名称分隔开的方式。在一个命名空间中声明的类的名称与另一个命名空间中声明的相同的类的名称不冲突。
+- Array： 所有的数组都是由连续的内存位置组成的。最低的地址对应第一个元素，最高的地址对应最后一个元素。
+- Class vs Struct：
+  - ![20240508212409](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240508212409.png)
+  - ![20240508212423](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240508212423.png)
+- enum： 值类型
+- 多态：静态：函数/运算符（public static）重载；动态：抽象/虚方法
+- Interface： 
+  - 接口定义了属性、方法和事件，这些都是接口的成员。接口只包含了成员的声明。成员的定义是派生类的责任。
+  - 与abstract class 类似![20240508220337](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240508220337.png)
+- 预处理器指令指导编译器在实际编译开始之前对信息进行预处理。
+- Throw：需要嵌套![20240508221250](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240508221250.png)。否则会重置抛出点（异常堆栈的记录被重置）
+- System.IO：文本读写：StreamReader 和 StreamWriter。； 二进制读写：BinaryReader 和 BinaryWriter
+- 

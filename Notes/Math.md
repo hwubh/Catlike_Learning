@@ -1,0 +1,19 @@
+- 1： Viewing Transformation:
+  - https://zhuanlan.zhihu.com/p/144329075
+  - https://zhuanlan.zhihu.com/p/122411512
+  - Orth：Consider scale, then translation (n+f/2 * 2/f-n = n+f/f-n)
+- 2：剔除Culling与剪裁Clipping： https://blog.csdn.net/qq_33744693/article/details/88704309
+- 3：透射校正插值(Perspetive-Correct-Interpolation)： 
+  - https://paroj.github.io/gltut/Texturing/Tut14%20Interpolation%20Redux.html 
+  - https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/visibility-problem-depth-buffer-depth-interpolation.html
+  - https://blog.csdn.net/seizeF/article/details/92760068
+- 4：Filter： https://www.cnblogs.com/cxrs/archive/2009/10/18/JustAProgramer.html‘
+- 5：Texture Compression： 
+  - https://zhuanlan.zhihu.com/p/634020434
+  - https://zhuanlan.zhihu.com/p/237940807
+- 6：Early-Z Culling和HiZ
+  - https://blog.csdn.net/yinfourever/article/details/109822330
+- 7：OIT: https://blog.csdn.net/qq_35312463/article/details/115827894
+- 8：PBR: https://zhuanlan.zhihu.com/p/53086060
+- 9：延迟渲染：https://zhuanlan.zhihu.com/p/102134614
+- 10: GI: IBL/ PRT/ Light Probe/ Lightmap: https://juejin.cn/post/7026291302547324964#heading-1
