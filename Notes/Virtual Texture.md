@@ -1,4 +1,4 @@
-##Virtual Texture 的方法总结及可行性报告。
+1##Virtual Texture 的方法总结及可行性报告。
 
 ###Virtual Texture定义:
 - 因为内存/显存使用，带宽消耗等考虑, 选择不将一张巨大的贴图（集）载入内存/显存 ，而是该贴图（集）进行管理，根据场景加载需要的贴图。（在GPU根据场景中的mesh推断，不同于在CPU通过逻辑管理的Texture streaming)（在这种情况可将Virtual Texture 视为场景中唯一使用的贴图， 单独的mesh不再于单一的材质绑定）。 ---》Texture

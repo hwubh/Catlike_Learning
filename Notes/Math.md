@@ -9,6 +9,7 @@
   - https://blog.csdn.net/seizeF/article/details/92760068
 - 4：Filter： https://www.cnblogs.com/cxrs/archive/2009/10/18/JustAProgramer.html‘
 - 5：Texture Compression： 
+  - ETC: 人眼对亮度而不是色度更敏感这一事实。 因此，每个子块中仅存储一种基色 (ETC1/ETC2 由两个子块组成) ，但亮度信息是按每个纹素存储的
   - https://zhuanlan.zhihu.com/p/634020434
   - https://zhuanlan.zhihu.com/p/237940807
 - 6：Early-Z Culling和HiZ
@@ -17,3 +18,4 @@
 - 8：PBR: https://zhuanlan.zhihu.com/p/53086060
 - 9：延迟渲染：https://zhuanlan.zhihu.com/p/102134614
 - 10: GI: IBL/ PRT/ Light Probe/ Lightmap: https://juejin.cn/post/7026291302547324964#heading-1
+- 11: 资源处理：AssetPostProcesser

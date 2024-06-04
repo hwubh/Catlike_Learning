@@ -46,3 +46,5 @@
 - GC：C# VS IL2CPP
 - Where：指定类型约束
   - 接口约束；基类约束；构造函数约束（new）；函数约束
+- 协程：https://www.cnblogs.com/unity3ds/p/10993374.html
+- Unity SendMessage
