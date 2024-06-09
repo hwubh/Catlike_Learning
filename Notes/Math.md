@@ -1,17 +1,15 @@
 - 1： Viewing Transformation:
   - https://zhuanlan.zhihu.com/p/144329075
   - https://zhuanlan.zhihu.com/p/122411512
-  - Orth：Consider scale, then translation (n+f/2 * 2/f-n = n+f/f-n)
+  - Orthgraphic：Consider scale, then translation (n+f/2（centre） * 2/f-n（scale） = n+f/f-n)
+  - Perspective: 
 - 2：剔除Culling与剪裁Clipping： https://blog.csdn.net/qq_33744693/article/details/88704309
 - 3：透射校正插值(Perspetive-Correct-Interpolation)： 
   - https://paroj.github.io/gltut/Texturing/Tut14%20Interpolation%20Redux.html 
   - https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/visibility-problem-depth-buffer-depth-interpolation.html
   - https://blog.csdn.net/seizeF/article/details/92760068
 - 4：Filter： https://www.cnblogs.com/cxrs/archive/2009/10/18/JustAProgramer.html‘
-- 5：Texture Compression： 
-  - ETC: 人眼对亮度而不是色度更敏感这一事实。 因此，每个子块中仅存储一种基色 (ETC1/ETC2 由两个子块组成) ，但亮度信息是按每个纹素存储的
-  - https://zhuanlan.zhihu.com/p/634020434
-  - https://zhuanlan.zhihu.com/p/237940807
+- 5：
 - 6：Early-Z Culling和HiZ
   - https://blog.csdn.net/yinfourever/article/details/109822330
 - 7：OIT: https://blog.csdn.net/qq_35312463/article/details/115827894

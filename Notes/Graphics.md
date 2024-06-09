@@ -1,2 +1,18 @@
 - #Normal #transform #Object_Space #World_Space Stop Using Normal Matrix: https://lxjk.github.io/2017/10/01/Stop-Using-Normal-Matrix.html
     *Tips* :![20240213203944](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240213203944.png) The "M" should be "M<sup>'</sup>"
+- Texture Compression： https://zhuanlan.zhihu.com/p/634020434; https://zhuanlan.zhihu.com/p/237940807
+  - ETC: 人眼对亮度而不是色度更敏感这一事实。 因此，每个子块中仅存储一种基色 (ETC1/ETC2 由两个子块组成) ，但亮度信息是按每个纹素存储的。子块由1个基本颜色值和4个修饰值可以确定出4种新的颜色值。
+    - 2个分块*16bit: 存储1个RGB基色（12bit）, 1bit “diff”， 3bit 修饰位； 16个2位选择器，从四个颜色中选出一个。
+  - DXTC：https://en.wikipedia.org/wiki/S3_Texture_Compression
+    - DXT1: 用于RGB或只有1bit Alpha的贴图 
+      - 4*4*64bit 为一个单位，前32bit存贮颜色的两个极端值(c0,c1)，后32bit分为4*4的lookup page，每个page对应一个pixel和2bit状态符（0:c0; 1: c1; 2:c2(插值的颜色)；3：c3（插值的颜色或transparent, if c0 <= c1））
+    - DXT2/3：在DXT1的基础上多出64bit来描述alpha信息，每个pixel的alpha 4bit存储
+      - DXT2：color: Premultiplied by alpha
+      - DXT3：独立
+    - DXT4/5: 在DXT1的基础上多出64bit来描述alpha信息，alpha 以类似color的方式存贮，64bit 包含2个4bit 极端值，16个3bit 状态符。
+      - if c0> c1, c2~7 插值； if c0 <= c1, c2~5插值，c6=0, c7=255
+  - PVRTC:
+    - 不同于DXT和ETC这类基于块的算法，而将整张纹理分为了高频信号和低频信号，低频信号由两张低分辨率的图像A和B表示，这两张图在两个维度上都缩小了4倍，高频信号则是全分辨率但低精度的调制图像M，M记录了每个像素混合的权重。要解码时，A和B图像经过双线性插值（bilinearly）宽高放大4倍，然后与M图上的权重进行混合。
+  - ASTC: https://zhuanlan.zhihu.com/p/158740249
+    - 每块固定使用128bit，块size：4*4~12*12
+    - 
