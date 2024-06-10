@@ -10,4 +10,4 @@
 - 8：URP pass，先统一调用一次Init， 在调用所有的Setup，最后是所有Execute阶段，Execute是实质的运行阶段（绘制）阶段。
 - 9：URP 中，unity内存的cbuffer就占据了7个动态的标识符（非Instancing 的少一个），对于一些maxDescriptorSetUniformBuffersDynamic 为 8 芯片（如Andreno 512以下）的机型，Shader只可以自己定义1~2Cbuffer, 否则（不改动源码的情况下）该shader会被直接抛弃。
 - 10：The light map UV are provided via the second texture coordinates channel so we need to use the TEXCOORD1 semantic in Attributes.
-- 11：URP14中cmd.blit 在msaa未开启的情况下获取的maintex为黑；若使用Blitter.BlitCameraTexture需要将maintex改成blitTexture，且必须包含“Runtime/Utilities/Blit.hlsl”
+- 11：URP14中cmd.blit 在msaa未开启的情况下获取的maintex为黑；若使用Blitter.BlitCameraTexture需要将maintex改成blitTexture，且必须包含“Runtime/Utilities/Blit.hlsl”，且需要重映射一下顶点和uv。![20240611005239](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240611005239.png)

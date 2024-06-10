@@ -9,7 +9,8 @@
   - https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/visibility-problem-depth-buffer-depth-interpolation.html
   - https://blog.csdn.net/seizeF/article/details/92760068
 - 4：Filter： https://www.cnblogs.com/cxrs/archive/2009/10/18/JustAProgramer.html‘
-- 5：
+- 5：Reverse-z: ；在View Space下对应的平面尽量均匀分布，移动视野等过度相对平滑
+  - 浮点数的分布是不均匀，越靠*0的浮点数分布越密集 + 近平面精度较高
 - 6：Early-Z Culling和HiZ
   - https://blog.csdn.net/yinfourever/article/details/109822330
 - 7：OIT: https://blog.csdn.net/qq_35312463/article/details/115827894
@@ -17,3 +18,5 @@
 - 9：延迟渲染：https://zhuanlan.zhihu.com/p/102134614
 - 10: GI: IBL/ PRT/ Light Probe/ Lightmap: https://juejin.cn/post/7026291302547324964#heading-1
 - 11: 资源处理：AssetPostProcesser
+- 12：法线贴图与切线空间：https://zhuanlan.zhihu.com/p/261667233
+- 

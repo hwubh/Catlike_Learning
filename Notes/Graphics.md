@@ -20,4 +20,6 @@
 - 3：Color Space：![20240610133007](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240610133007.png)
   - Gamma：2.2，屏幕输出时会将颜色变换到Gamma2.2空间中：$l = u^2.2, (l,u \in (0,1))$
   - Gamma矫正：$\frac 1 {2.2}$, 在屏幕输出前转到Gamma0.45，使屏幕最终输出转为Gamma1.0：$u_0 = u_i^{\frac{1}{2.2}}$
-  - 
+  - sRBG: Gamma0.45 Color Space
+    - Why: 1: 存储时进行Gamma矫正；
+           2：人眼对暗部更敏感，用更大的数据范围来存暗色，用较小的数据范围来存亮色
