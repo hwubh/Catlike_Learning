@@ -1,6 +1,7 @@
-- #Normal #transform #Object_Space #World_Space Stop Using Normal Matrix: https://lxjk.github.io/2017/10/01/Stop-Using-Normal-Matrix.html
+- 1：#Normal #transform #Object_Space #World_Space Stop Using Normal Matrix: https://lxjk.github.io/2017/10/01/Stop-Using-Normal-Matrix.html
     *Tips* :![20240213203944](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240213203944.png) The "M" should be "M<sup>'</sup>"
-- Texture Compression： https://zhuanlan.zhihu.com/p/634020434; https://zhuanlan.zhihu.com/p/237940807
+
+- 2：Texture Compression： https://zhuanlan.zhihu.com/p/634020434; https://zhuanlan.zhihu.com/p/237940807
   - ETC: 人眼对亮度而不是色度更敏感这一事实。 因此，每个子块中仅存储一种基色 (ETC1/ETC2 由两个子块组成) ，但亮度信息是按每个纹素存储的。子块由1个基本颜色值和4个修饰值可以确定出4种新的颜色值。
     - 2个分块*16bit: 存储1个RGB基色（12bit）, 1bit “diff”， 3bit 修饰位； 16个2位选择器，从四个颜色中选出一个。
   - DXTC：https://en.wikipedia.org/wiki/S3_Texture_Compression
@@ -15,4 +16,8 @@
     - 不同于DXT和ETC这类基于块的算法，而将整张纹理分为了高频信号和低频信号，低频信号由两张低分辨率的图像A和B表示，这两张图在两个维度上都缩小了4倍，高频信号则是全分辨率但低精度的调制图像M，M记录了每个像素混合的权重。要解码时，A和B图像经过双线性插值（bilinearly）宽高放大4倍，然后与M图上的权重进行混合。
   - ASTC: https://zhuanlan.zhihu.com/p/158740249
     - 每块固定使用128bit，块size：4*4~12*12
-    - 
+
+- 3：Color Space：![20240610133007](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240610133007.png)
+  - Gamma：2.2，屏幕输出时会将颜色变换到Gamma2.2空间中：$l = u^2.2, (l,u \in (0,1))$
+  - Gamma矫正：$\frac 1 {2.2}$, 在屏幕输出前转到Gamma0.45，使屏幕最终输出转为Gamma1.0：$u_0 = u_i^{\frac{1}{2.2}}$
+  - 
