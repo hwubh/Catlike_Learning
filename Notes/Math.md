@@ -19,4 +19,5 @@
 - 10: GI: IBL/ PRT/ Light Probe/ Lightmap: https://juejin.cn/post/7026291302547324964#heading-1
 - 11: 资源处理：AssetPostProcesser
 - 12：法线贴图与切线空间：https://zhuanlan.zhihu.com/p/261667233
+  ![20240613200017](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240613200017.png)
 - 
