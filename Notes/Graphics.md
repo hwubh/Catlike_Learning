@@ -33,6 +33,36 @@
   - Unity：如果选择了Gamma，那Unity不会对输入和输出做任何处理，换句话说，Remove Gamma Correction 、Gamma Correction都不会发生，除非你自己手动实现；而Linear则对Shaderlab中的*颜色*输入，有[Gamma]前缀的Property变量（如*金属度*）以及在*sRGB Texture*采样前进行Remove Gamma Correction。
   - Gamma空间：使用非sRGB diffuse图时可以节省一步Remove Gamma Correction运算。
   - Linear空间：使用sRGB diffuse时美术查看效果方便，shader中可以不用写Remove Gamma Correction。但Remove Gamma Correction必不可少。
-             
 
-              
+- 4：卷积：两个函数（输入函数：f(x), 权值函数：g(x)）的卷积，本质上就是先将一个函数翻转，然后进行滑动叠加。
+     卷积的本质就是加权积分, 对于（输入函数：f(x), 权值函数：g(x)）来说，g是f的权值函数，表示输入f各个点对输出结果的影响大小。数学定义∑f(x)g(n-x)中的n-x表示x的权值和什么相关，也可以理解为一种约束。![20240616182256](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616182256.png)
+  - 卷：函数的翻转：为“积”施加约束，指定参考（如信号分享中的在特定的时间段的前后进行“积”）
+  - 积：积分/加权求和：是**全局**概念，把两个函数在时间或者空间上进行混合
+  - ![v2-847a8d7c444508862868fa27f2b4c129_r](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/v2-847a8d7c444508862868fa27f2b4c129_r.jpg)
+
+- 5: 采样定理，频谱混叠和傅里叶变换：https://zhuanlan.zhihu.com/p/74736706 https://zhuanlan.zhihu.com/p/627793196
+  - 采样：把模拟信号转换为计算机可以处理的数字信号的过程；采样定理：只有当采样频率fs.max > 最高频率fmax的2倍时，才能比较好的保留原始信号的信息。（实践中倍率多为介于2.56~4）
+  - 狄拉克函数：在时域和频域都是脉冲状的；
+    时域：周期为$T_s$![v2-2b3c294a40466b50571b0d905b34cb63_r](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/v2-2b3c294a40466b50571b0d905b34cb63_r.j
+    频域：周期为$\frac{2\pi}{T_s}$![20240616200427](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616200427.png)
+  - 时域的乘积等于频域的卷积（反之亦然）：采样相当于在频域在冲激函数的各频率处重复目标信号的频谱![v2-057fdc41813a61dae12dae44dcd49cd9_r](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/v2-057fdc41813a61dae12dae44dcd49cd9_r.jpg)
+  - 频域与时域：![20190513004552862](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20190513004552862.gif)
+  - 频谱的混叠：在时域上采样如果不够快，也就是采样函数的频率过低，那么频域上频率重复的就会变得过快，最终会造成频谱的混叠![v2-914d0b3b671270340c5c872663f89b09_r](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/v2-914d0b3b671270340c5c872663f89b09_r.jpg)
+    当混叠发生时，可用使用*低通滤波*过滤到低频信息（图像上表现为模糊）![v2-12a2df5bc1b0d2fa13163f340f5a28ee_r](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/v2-12a2df5bc1b0d2fa13163f340f5a28ee_r.jpg)
+
+- FXAA与Sharpening：https://zhuanlan.zhihu.com/p/431384101 https://catlikecoding.com/unity/tutorials/custom-srp/fxaa/#3.7 https://wingstone.github.io/posts/2021-03-01-fxaa/
+  - FXAA：Quality：
+    - 边缘判断：梯度计算，采样5次，![20240616232605](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616232605.png)
+    - 基于亮度的混合系数计算：采样9次，通过计算目标像素和周围像素点的平均亮度的差值，我们来确定将来进行颜色混合时的权重；![20240616232920](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616232920.png)
+    - 计算混合方向：取梯度最大的方向，向上为正，向下为负，向右为正，向左为负：![20240616233142](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616233142.png)
+    - 混合：将当前像素点的 uv ，沿着偏移的方向，按照偏移权重偏移；![20240616233334](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616233334.png)
+    - 边界混合系数：针对斜边，要得到得到正确的混合系数，就需要扩大采样范围。判断边界的方式是计算两侧的亮度值的差，是否和当前的亮度变化梯度值符合。![20240616233628](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616233628.png)![20240616233702](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616233702.png)
+  - FXAA: Console：简化版本
+    -  边缘判断：梯度计算，采样5次，同Quality
+    -  方向判断：计算当前亮度变化的梯度值，即亮度变化最快的方向，就是锯齿边界的法线方向。![20240616234222](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616234222.png)
+    -  混合：沿着切线方向分别向正负方向偏移 UV ，进行两次采样，再平均后作为抗锯齿的结果。![20240616234250](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616234250.png)
+    -  边界混合：因为对水平和垂直方向的锯齿不友好，故将偏移距离延伸至更远处。做法是用Dir 向量分量的最小值的倒数，将 Dir1 进行缩放。![20240616234723](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616234723.png)![20240616234752](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616234752.png)
+  - 缺点：在光照高频(颜色变化很快)的地方不稳定（blend anything that has high enough contrast, including isolated pixels），移动摄影机时，会导致一些闪烁。
+  - 可用于几何抗拒齿也可用于shading抗拒齿；使用一个pass即可实现FXAA，非常易于集成；与MSAA相比能节省大量内存；可用于延迟渲染；
+  - 如何缓解FXAA带来模糊感？：https://gamedev.stackexchange.com/questions/104339/how-do-i-counteract-fxaa-blur
+    - sharpending？/edge detection： 先用edge detection 计算出高频部分，然后乘以一个sharpness系数，加上FXAA处理后的图片。

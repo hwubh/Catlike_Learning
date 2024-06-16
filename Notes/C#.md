@@ -7,7 +7,7 @@
   - 命名空间的设计目的是提供一种让一组名称与其他名称分隔开的方式。在一个命名空间中声明的类的名称与另一个命名空间中声明的相同的类的名称不冲突。
   - PE：PE头、CLR头、元数据和IL代码；https://www.cnblogs.com/vvjiang/p/5229545.html
 - 装箱 (boxing)：值类型实例到对象的转换。 拆箱（Unboxing）：将引用类型转换为值类型。存在着从栈到堆的互指以及堆内存的开辟
-- Collections：
+- Collections：https://blog.csdn.net/qiaoquan3/article/details/51380992
   - Array：   
     - 所有的数组都是由连续的内存位置组成的。最低的地址对应第一个元素，最高的地址对应最后一个元素。
     - 数组的内容都是相同类型。
@@ -28,7 +28,7 @@
   - Queue< T >
     - 先进先出
     - 默认初始容量为32，增长因子为2.0
-    - 底层Array
+    - 底层Array，循环数组
   - Stack< T >
     - 后进先出
     - 默认容量为10
@@ -36,10 +36,11 @@
   - Dictionary< K,T>
     - 增加、删除、访问快
     - 空间占用大，buckets的长度就是字典的真实长度, buckets中的每个元素都是一个链表
+    - 数组 + 单项链表
     - ![20240605130119](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240605130119.png)
   - Hashtable
     - Key，Value皆为Object
-    - 
+  - 循环数组：指向队尾的指针可以动过（mod 数组的长度来回到初始位置），同时用(tail+1)%array.length=head 来判断空间是否队满（牺牲了一个元素的位置）。https://cloud.tencent.com/developer/article/1013597
 - Class vs Struct：
   - ![20240508212409](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240508212409.png)
   - ![20240508212423](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240508212423.png)
