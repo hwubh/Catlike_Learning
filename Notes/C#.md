@@ -18,6 +18,7 @@
     - 不是类型安全的
     - 以Object类型进行存储需要boxing unboxing
     - 插入，删除时需要移动其后的所有元素
+    - 动态扩容
   - List< T >:
     - 类型安全，需要指明类型
     - 内部使用Array储存
@@ -32,7 +33,7 @@
   - Stack< T >
     - 后进先出
     - 默认容量为10
-    - 同Queue
+    - 同Queue/
   - Dictionary< K,T>
     - 增加、删除、访问快
     - 空间占用大，buckets的长度就是字典的真实长度, buckets中的每个元素都是一个链表

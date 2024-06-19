@@ -43,7 +43,7 @@
 - 5: 采样定理，频谱混叠和傅里叶变换：https://zhuanlan.zhihu.com/p/74736706 https://zhuanlan.zhihu.com/p/627793196
   - 采样：把模拟信号转换为计算机可以处理的数字信号的过程；采样定理：只有当采样频率fs.max > 最高频率fmax的2倍时，才能比较好的保留原始信号的信息。（实践中倍率多为介于2.56~4）
   - 狄拉克函数：在时域和频域都是脉冲状的；
-    时域：周期为$T_s$![v2-2b3c294a40466b50571b0d905b34cb63_r](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/v2-2b3c294a40466b50571b0d905b34cb63_r.j
+    时域：周期为$T_s$![v2-2b3c294a40466b50571b0d905b34cb63_r](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/v2-2b3c294a40466b50571b0d905b34cb63_r.jpg)
     频域：周期为$\frac{2\pi}{T_s}$![20240616200427](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240616200427.png)
   - 时域的乘积等于频域的卷积（反之亦然）：采样相当于在频域在冲激函数的各频率处重复目标信号的频谱![v2-057fdc41813a61dae12dae44dcd49cd9_r](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/v2-057fdc41813a61dae12dae44dcd49cd9_r.jpg)
   - 频域与时域：![20190513004552862](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20190513004552862.gif)
