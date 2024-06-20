@@ -7,9 +7,11 @@ public partial class CameraRenderer
 {
     //定义分部函数的方式类似C++
     partial void DrawUnsupportedShaders();
-    partial void DrawGizmos();
+    partial void DrawGizmosBeforeFX();
+
+    partial void DrawGizmosAfterFX();
     partial void PrepareForSceneWindow();
-    partial void PrepareBuffer(CommandBuffer cmd);
+    partial void PrepareBuffer();
     //这块代码只会在Editor下起作用
 #if UNITY_EDITOR
     //获取Unity默认的shader tag id
@@ -49,12 +51,18 @@ public partial class CameraRenderer
         context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
     }
 
-    partial void DrawGizmos()
+    partial void DrawGizmosBeforeFX()
     {
-        //Scene窗口中绘制Gizmos
         if (Handles.ShouldRenderGizmos())
         {
             context.DrawGizmos(camera, GizmoSubset.PreImageEffects);
+        }
+    }
+
+    partial void DrawGizmosAfterFX()
+    {
+        if (Handles.ShouldRenderGizmos())
+        {
             context.DrawGizmos(camera, GizmoSubset.PostImageEffects);
         }
     }
@@ -67,11 +75,11 @@ public partial class CameraRenderer
             ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
         }
     }
-    partial void PrepareBuffer(CommandBuffer cmd)
+    partial void PrepareBuffer()
     {
         Profiler.BeginSample("Editor Only");
         //对每个摄像机使用不同的Sample Name
-        cmd.name = SampleName = camera.name;
+        buffer.name = SampleName = camera.name;
         Profiler.EndSample();
     }
 

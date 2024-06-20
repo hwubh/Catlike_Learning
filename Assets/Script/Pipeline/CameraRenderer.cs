@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -14,16 +14,16 @@ public partial class CameraRenderer
 
     CullingResults cullingResults;
 
-    CommandBuffer cmd = new CommandBuffer { name = bufferName };
+    CommandBuffer buffer = new CommandBuffer { name = bufferName };
 
     static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
     static ShaderTagId litShaderTagId = new ShaderTagId("CustomLit");
 
-    	CommandBuffer buffer = new CommandBuffer {
-		name = bufferName
-	};
-
     Lighting lighting = new Lighting();
+
+    PostFXStack postFXStack = new PostFXStack();
+
+    static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
 
 #if UNITY_EDITOR
 #else
@@ -31,27 +31,38 @@ public partial class CameraRenderer
 #endif
 
     //摄像机渲染器的渲染函数，在当前渲染上下文的基础上渲染当前摄像机
-    public void Render(ScriptableRenderContext context, Camera camera, bool useDynamicBatching, bool useGPUInstancing, bool useLightsPerObject, ShadowSettings shadowSettings)
+    public void Render(ScriptableRenderContext context, Camera camera, bool useDynamicBatching, bool useGPUInstancing, bool useLightsPerObject, 
+        ShadowSettings shadowSettings, PostFXSettings postFXSettings)
     {
         this.context = context;
         this.camera = camera;
 
-        PrepareBuffer(cmd);
+        PrepareBuffer();
         PrepareForSceneWindow();
         if (!Cull(shadowSettings.maxDistance))
         {
             return;
         }
 
-        cmd.BeginSample(SampleName);
+        buffer.BeginSample(SampleName);
         ExecuteBuffer();
-        lighting.Setup(context, cullingResults, shadowSettings, useLightsPerObject);
-        cmd.EndSample(SampleName);
+        lighting.Setup(
+            context, cullingResults, shadowSettings, useLightsPerObject
+        );
+        postFXStack.Setup(context, camera, postFXSettings);
+        buffer.EndSample(SampleName);
         SetUp();
-        DrawVisibleGeometry(useDynamicBatching, useGPUInstancing, useLightsPerObject);
+        DrawVisibleGeometry(
+            useDynamicBatching, useGPUInstancing, useLightsPerObject
+        );
         DrawUnsupportedShaders();
-        DrawGizmos();
-        lighting.Cleanup();
+        DrawGizmosBeforeFX();
+        if (postFXStack.IsActive)
+        {
+            postFXStack.Render(frameBufferId);
+        }
+        DrawGizmosAfterFX();
+        Cleanup();
         Submit();
     }
 
@@ -104,22 +115,42 @@ public partial class CameraRenderer
     {
         context.SetupCameraProperties(camera);
         CameraClearFlags flags = camera.clearFlags;
-        cmd.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
-        cmd.BeginSample(SampleName);
+
+        if (postFXStack.IsActive)
+        {
+            buffer.GetTemporaryRT(
+                frameBufferId, camera.pixelWidth, camera.pixelHeight,
+                32, FilterMode.Bilinear, RenderTextureFormat.Default
+            );
+            buffer.SetRenderTarget(
+                frameBufferId,
+                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store
+            );
+        }
+
+        buffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, flags == CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
+        buffer.BeginSample(SampleName);
         ExecuteBuffer();
     }
 
     public void Submit()
     {
-        cmd.EndSample(SampleName);
+        buffer.EndSample(SampleName);
         ExecuteBuffer();
         context.Submit();
     }
 
     private void ExecuteBuffer()
     {
-        context.ExecuteCommandBuffer(cmd);
-        cmd.Clear();
+        context.ExecuteCommandBuffer(buffer);
+        buffer.Clear();
     }
-
+    void Cleanup()
+    {
+        lighting.Cleanup();
+        if (postFXStack.IsActive)
+        {
+            buffer.ReleaseTemporaryRT(frameBufferId);
+        }
+    }
 }

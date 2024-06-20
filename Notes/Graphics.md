@@ -66,3 +66,5 @@
   - 可用于几何抗拒齿也可用于shading抗拒齿；使用一个pass即可实现FXAA，非常易于集成；与MSAA相比能节省大量内存；可用于延迟渲染；
   - 如何缓解FXAA带来模糊感？：https://gamedev.stackexchange.com/questions/104339/how-do-i-counteract-fxaa-blur
     - sharpending？/edge detection： 先用edge detection 计算出高频部分，然后乘以一个sharpness系数，加上FXAA处理后的图片。
+
+- 

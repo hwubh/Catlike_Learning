@@ -1,63 +1,38 @@
-using Unity.Collections;
 using UnityEngine;
-using UnityEngine.Experimental.GlobalIllumination;
-using LightType = UnityEngine.LightType;
+using UnityEngine.Rendering;
 
-public partial class CustomRenderPipeline
+public partial class CustomRenderPipeline : RenderPipeline
 {
+	CameraRenderer renderer = new CameraRenderer();
 
-    partial void InitializeForEditor();
+    //批处理配置
+    private bool useDynamicBatching, useGPUInstancing, useLightsPerObject;
 
-#if UNITY_EDITOR
-    partial void InitializeForEditor()
+    ShadowSettings shadowSettings;
+
+    PostFXSettings postFXSettings;
+
+    //构造函数，初始化管线的一些属性
+    public CustomRenderPipeline(bool useDynamicBatching, bool useGPUInstancing, bool useSRPBatcher, bool useLightsPerObject, 
+        ShadowSettings shadowSettings, PostFXSettings postFXSettings)
     {
-        Lightmapping.SetDelegate(lightsDelegate);
+        this.shadowSettings = shadowSettings;
+        this.useDynamicBatching = useDynamicBatching;
+        this.useGPUInstancing = useGPUInstancing;
+        this.useLightsPerObject = useLightsPerObject;
+        this.postFXSettings = postFXSettings;
+        //配置SRP Batch
+        GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBatcher;
+        InitializeForEditor();
     }
 
-    protected override void Dispose(bool disposing)
+    //必须重写Render函数，目前函数内部什么都不执行
+    protected override void Render(ScriptableRenderContext context, Camera[] cameras)
     {
-        base.Dispose(disposing);
-        Lightmapping.ResetDelegate();
-    }
-
-    static Lightmapping.RequestLightsDelegate lightsDelegate = (Light[] lights, NativeArray<LightDataGI> output) => 
-    {
-        var lightData = new LightDataGI();
-        for (int i = 0; i < lights.Length; i++)
+        foreach (Camera camera in cameras) 
         {
-            Light light = lights[i];
-            switch (light.type)
-            {
-                case LightType.Directional:
-                    var directionalLight = new DirectionalLight();
-                    LightmapperUtils.Extract(light, ref directionalLight);
-                    lightData.Init(ref directionalLight);
-                    break;
-                case LightType.Point:
-                    var pointLight = new PointLight();
-                    LightmapperUtils.Extract(light, ref pointLight);
-                    lightData.Init(ref pointLight);
-                    break;
-                case LightType.Spot:
-                    var spotLight = new SpotLight();
-                    LightmapperUtils.Extract(light, ref spotLight);
-                    spotLight.innerConeAngle = light.innerSpotAngle * Mathf.Deg2Rad;
-                    spotLight.angularFalloff = AngularFalloffType.AnalyticAndInnerAngle;
-                    lightData.Init(ref spotLight);
-                    break;
-                case LightType.Area:
-                    var rectangleLight = new RectangleLight();
-                    LightmapperUtils.Extract(light, ref rectangleLight);
-                    rectangleLight.mode = LightMode.Baked;
-                    lightData.Init(ref rectangleLight);
-                    break;
-                default:
-                    lightData.InitNoBake(light.GetInstanceID());
-                    break;
-            }
-            lightData.falloff = FalloffType.InverseSquared;
-            output[i] = lightData;
-        }
-    };
-#endif
+			renderer.Render(context, camera, useDynamicBatching, useGPUInstancing, useLightsPerObject, shadowSettings, postFXSettings);
+		}
+    }
 }
+
