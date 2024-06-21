@@ -1,7 +1,6 @@
 #ifndef CUSTOM_META_PASS_INCLUDED
 #define CUSTOM_META_PASS_INCLUDED
 
-#include "litpass.hlsl"
 #include "Assets/ShaderLibrary/Shadows.hlsl"
 #include "Assets/ShaderLibrary/Light.hlsl"
 #include "Assets/ShaderLibrary/BRDF.hlsl"
