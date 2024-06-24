@@ -67,4 +67,22 @@
   - 如何缓解FXAA带来模糊感？：https://gamedev.stackexchange.com/questions/104339/how-do-i-counteract-fxaa-blur
     - sharpending？/edge detection： 先用edge detection 计算出高频部分，然后乘以一个sharpness系数，加上FXAA处理后的图片。
 
-- 
+- TAA：历史帧的数据来实现抗锯齿，每个像素点有多个采样点，但均摊到多个帧中。
+  - 静态：只保留上一帧计算的结果与当前帧两帧。
+    - 次采样点：就是在每帧采样时，将采样的点进行偏移，实现**抖动** (jitter)。 采样点的偏移与次序使用 *Halton* 序列![20240624194119](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240624194119.png)
+             **抖动**：通过修改投影矩阵的$m_20 , m_21$项来偏移XY分量。![v2-143d0f5393f5c7b9d9b18eeba2ce66eb_r](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/v2-143d0f5393f5c7b9d9b18eeba2ce66eb_r.png)
+    - 混合：因为在HDR空间下作TAA效果抗锯齿效果不佳；在postprocessing后做TAA会影响需要在HDR中计算的bloom等效果；所以开启TAA时需要两次Tone mapping：（下图方案一）![v2-c4ccc37c5541f7a7fe166bc7fafc36b8_720w](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/v2-c4ccc37c5541f7a7fe166bc7fafc36b8_720w.webp)
+          最后将历史帧数据，和当前帧数据进行 lerp 混合。
+  - 动态（相机移动，物体静止）： 
+    - 重投影：当相机移动后，使用当前帧的深度信息，反算出世界坐标，使用上一帧的投影矩阵，在混合计算时做一次重投影。![v2-b68e86d6db5205544484fe1a6b910da0_r](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/v2-b68e86d6db5205544484fe1a6b910da0_r.png)
+      - Reverse Reprojection（重投影）：记录上一帧的MVP矩阵，当前帧渲染时会使用上一帧的MVP矩阵对像素进行反向投影，看是否可以在上一帧的帧缓冲里面找到(此处判断是否找到：根据物体ID、深度等信息)。若找到则复用，未找到则标记为“遮蔽”。（如果是蒙皮mesh，还需要记录骨骼位置）
+  - 动态（物体移动）：
+    - Motion Vector/Velocity：像素在历史帧与当前帧在屏幕空间下的位移。存储在 Motion Vector/Velocity 贴图（RG16格式，对精度要求高）上。
+      <!-- P.S.: UE中为了节省Velocity Buffer 的带宽，只计算运动物体的Motion Vector，  -->
+    - 使用 Motion Vector：使用 Motion Vector 算出上一帧在屏幕空间的坐标（使用双线性模式进行采样，因为不一定在像素中心位置。可以对历史帧进行*锐化*处理）。
+                          因为 Velocity buffer本身也有锯齿，采样几何体边缘可能引入新的锯齿。所以可以比较该像素周边3x3像素的深度，选用深度最小的那一个的velocity。
+    - Ghosting（鬼影）：当新的像素出现时，如果前后帧采样的颜色差过大的情况下进行混合。解决方式：对比当前帧和历史帧（以及相邻的像素），将历史帧的颜色截断（clamp/clip）在合理的范围内。
+      Flickering（闪烁）：抖动导致的不收敛，子采样点存在部分高频信息，混合后造成的闪烁。本质上是高频信息被离散的光栅化方法限制的问题。着色走样：假如历史帧存在高光，而当前帧却因为子采样点的抖动没有采样到高光信息，历史帧的高光信息就会被截断，就会导致这一高光“忽隐忽现”。 集合走样：当一个在屏幕空间极其细小的三角形经过光栅化时，谁都不能在看到显示结果时得知其是否被光栅化到了某一个像素上，这就是“薛定谔的光栅化”。
+    - 解决方式：对采样的历史帧和当前帧数据进行对比，将历史帧数据 clamp/截断 在合理的范围内：读取当前帧数据目标像素周围 5 个或 9 个像素点的Max，Min值作为范围。然后：clamp或clip；在TAA之后进行一次滤波（低通），虽然可以有效减少闪烁，但是会让画面比较模糊。
+    - 混合：使用一个可变化的混合系数值来平衡抖动和模糊的效果，当物体的 Motion Vector 值比较大时，就增大 blendFactor 的值，反之则减小![20240625015835](https://raw.githubusercontent.com/hwubh/hwubh_Pictures/main/20240625015835.png)
+  - https://zhuanlan.zhihu.com/p/479530563；https://zhuanlan.zhihu.com/p/425233743；https://zhuanlan.zhihu.com/p/366494818

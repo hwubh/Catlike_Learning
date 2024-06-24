@@ -1,0 +1,13 @@
+- 1:网易（广州，深圳）：https://hr.game.163.com/recruit.html?categoryStr=%E6%8A%80%E6%9C%AF&typeStr=%E7%A0%94%E5%8F%91%E7%B1%BB&cityStr=%E5%B9%BF%E5%B7%9E,%E6%B7%B1%E5%9C%B3&searchStr=&pageSize=20&pageNumber=1
+- 2：灵犀：https://talent.lingxigames.com/off-campus/position-list?lang=zh&search=%E5%B7%A5%E7%A8%8B%E5%B8%88
+- 3：37 ： https://zhaopin.37.com/index.php?m=Home&c=recruit&a=recruit&recruit=1
+- 4：库洛：https://app.mokahr.com/social-recruitment/kuro/46886#/jobs?zhineng%5B0%5D=81687 UE为主
+- 5：4399：http://web.4399.com/job/social/
+- 6：西山居：https://app.mokahr.com/apply/xishanju/5744#/jobs?zhineng=19016&page=1&_k=qiamo3&location=%E7%8F%A0%E6%B5%B7%E5%B8%82
+- 7：诗悦： https://app.mokahr.com/social-recruitment/shiyuehr/72054#/jobs?zhineng%5B0%5D=109676&location%5B0%5D=%E5%B9%BF%E5%B7%9E%E5%B8%82&page=1&anchorName=jobsList&commitment%5B0%5D=%E5%85%A8%E8%81%8C
+- 8：深蓝：https://app.mokahr.com/apply/blueinteractive/38433#/job/dc49c357-da5e-4264-9578-de0dd07bca7e 客户端
+- 9：银汉：https://www.yh.cn/jobsinfo.html?type=2&jid=0#joblistright 客户端
+- 10：英雄： https://careers.hero.com/#/jobs?zhineng%5B0%5D=18814&location%5B0%5D=%E5%B9%BF%E5%B7%9E%E5%B8%82&location%5B1%5D=%E6%B7%B1%E5%9C%B3%E5%B8%82&page=1&anchorName=jobsList 客户端
+- 11： 纳仕游戏：https://www.zhipin.com/gongsi/job/c52b1cc01e2cd4dc1n153ty6FQ~~.html?ka=company-jobs ？
+- 12： 吉比特广州：https://join.g-bits.com/ 客户端
+- 13： 小丑鱼： https://hr.gznemo.com/recruitInfo?pid=8 TA
