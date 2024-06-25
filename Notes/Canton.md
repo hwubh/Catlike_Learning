@@ -11,3 +11,6 @@
 - 11： 纳仕游戏：https://www.zhipin.com/gongsi/job/c52b1cc01e2cd4dc1n153ty6FQ~~.html?ka=company-jobs ？
 - 12： 吉比特广州：https://join.g-bits.com/ 客户端
 - 13： 小丑鱼： https://hr.gznemo.com/recruitInfo?pid=8 TA
+- 14： 明昼科技：https://www.zhipin.com/gongsi/job/a924a4d41d93634b1nJ73tW8EFI~.html?ka=company-jobs 二次元
+- 15： 速游网络：https://www.q-dazzle.com/hr/7.html
+- 16： 创梦天地：https://www.zhipin.com/gongsi/45ceceb4371823221nV50tQ~.html UE

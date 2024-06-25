@@ -1,3 +1,10 @@
-1：多比特：https://app.mokahr.com/apply/wedobest/46166?activationToken=3b3d5752162bf2af613ae3f168c7617329446d3ae3bdc18fc33ed0958d313196#/jobs?zhineng%5B0%5D=77028&page=1&anchorName=jobsList&location%5B0%5D=%E5%B9%BF%E5%B7%9E%E5%B8%82
-2：madhead：https://www.madhead.com/seniorprogrammerclientapp
-3：凉屋：http://www.chillyroom.com/zh/join-us
+- 1: 蛮啾: https://app.mokahr.com/apply/manjiu/40770#/?anchorName=default_banner&sourceToken=
+- 2: 米哈游：https://jobs.mihoyo.com/#/position?jobName=&competencyTypes%5B0%5D=1&addressIds%5B0%5D=1&addressIds%5B1%5D=8&addressIds%5B2%5D=13
+- 3：鹰角：https://jobs.hypergryph.com/apply/hypergryph/26325/#/jobs?zhineng=72529&location=%E4%B8%8A%E6%B5%B7%E5%B8%82&page=1
+- 4：乐元素：https://www.zhipin.com/gongsi/job/c101020100/b8f3202d5736c5481nN539u1.html
+- 5：funplus（杭州）：https://www.zhipin.com/gongsi/job/c101210100/100000/96eac17fed77c8c61nJ43N66.html
+- 6：网易互娱：https://hr.game.163.com/recruit.html?categoryStr=%E6%8A%80%E6%9C%AF&typeStr=%E7%A0%94%E5%8F%91%E7%B1%BB&cityStr=&searchStr=&pageSize=20&pageNumber=1
+- 7：网易雷火：https://leihuo.163.com/joinus.html （无限大只招客户端）
+- 8：萨罗斯（深圳，杭州）：https://www.zhipin.com/gongsi/job/c101210100/3400b007eeca01e51HZ82t26ElE~.html（引擎好像Unity/UE都行）
+- 9：英雄游戏（杭州，上海的不确定是不是二次元）：https://careers.hero.com/social-recruitment/yingxionghr/100103/#/jobs?zhineng%5B0%5D=18814&page=1&anchorName=jobsList&location%5B0%5D=%E6%9D%AD%E5%B7%9E%E5%B8%82
+- 10：
