@@ -27,3 +27,5 @@
   - 4.1：Color Copy Texture：CameraBufferSettings里添加 copyColor, copyColorReflection。类似copy depth，配置copy color。
   - 4.2：Sampling the Buffer Color：GetBufferColor function that takes a fragment and UV offset as parameters, retuning the sampled color. offset用于扭曲。
   - 4.3：Distortion Vectors：使用贴图存储smoothly transitioning distortion vectors。在shader添加Particle distortion map和_DistortionStrength（uv offset的扭曲程度。随机性由片元的alpha值模拟）
+  - 4.4：Distortion Blend：添加系数用于粒子本身颜色与场景颜色的插值混合。
+  - 4.5：Fixing Nonstandard Cameras：添加对多相机的支持，从后处理中拆出FinalPass 专门用于copy。
